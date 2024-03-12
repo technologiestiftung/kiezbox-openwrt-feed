@@ -15,6 +15,7 @@ define Package/kb-base-conf
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox basefiles and setup scripts
+  DEPENDS:=+wpad-mbedtls +mesh11sd +luci-proto-batman-adv +kmod-batman-adv +batctl-full +ip-bridge
   PKGARCH:=all
 endef
 
