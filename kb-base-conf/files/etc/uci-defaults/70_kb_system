@@ -1,0 +1,252 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+kb_config_system() {
+	local eth0_mac="$(cat /sys/class/net/eth0/address)"
+	local prefix="$(uci -q get kb.main.prefix)"
+	local proj="$(uci -q get kb.main.proj)"
+	local state dist dist_name uid uid_name
+	[ "$(uci get kb.main.state)" = "u" ] && {
+		# Device specific setup
+		case "${eth0_mac}" in
+		## Devices in Schoeneberg (0701)
+		### Bananpi R3 used for tests (TSB R01)
+		#### SDCARD MAC
+		'3e:ed:3b:2e:f8:85')
+			state="t"
+			dist="71"
+			uid="01"
+			uid_name="TSB R01"
+		;;
+		### Gl.inet AR300M used for tests (TSB R02)
+		'94:83:c4:41:18:56')
+			state="t"
+			dist="71"
+			uid="02"
+			uid_name="TSB R02"
+		;;
+		## Default for undeclared devices
+		*)
+			state="a"
+			dist="fd"
+			uid="${eth0_mac: -2}"
+			uid_name="Auto-${eth0_mac//:}"
+		esac
+
+		# District name setup
+		case "${dist}" in
+		71)
+			dist_name="Schoeneberg"
+		;;
+		73)
+			dist_name="Tempelhof"
+		;;
+		fd)
+			dist_name="Autodistrict"
+		;;
+		esac
+
+		# Setup kb config
+		uci -q batch <<-EOF
+			set kb.main.state='${state}'
+			set kb.main.dist='${dist}'
+			set kb.main.dist_name='${dist_name}'
+			set kb.main.uid='${uid}'
+			set kb.main.uid_name='${uid_name}'
+		EOF
+
+		# Setup System information
+		uci -q batch <<-EOF
+			set system.@system[0].hostname='${prefix}-${state}-${dist}-${uid}'
+			set system.@system[0].description='${proj} ( ${dist_name} - ${uid_name} )'
+		EOF
+	}
+}
+
+kb_config_network() {
+	local prefix="$(uci -q get kb.main.prefix)"
+	local state="$(uci -q get kb.main.state)"
+	local dist="$(uci -q get kb.main.dist)"
+	local uid="$(uci -q get kb.main.uid)"
+	# setup batman device
+	[ -z "$(uci -q get network.bat0)" ] && {
+		uci -q batch <<-EOF
+			set network.bat0='interface'
+			set network.bat0.proto='batadv'
+			set network.bat0.routing_algo='BATMAN_IV'
+			set network.bat0.gw_mode='off'
+			set network.bat0.hop_penalty='30'
+		EOF
+	}
+	# setup openwrt batman interface
+	[ -z "$(uci -q get network.batmesh)" ] && {
+		uci -q batch <<-EOF
+			set network.batmesh='interface'
+			set network.batmesh.proto='batadv_hardif'
+			set network.batmesh.master='bat0'
+			set network.batmesh.mtu='1536'
+		EOF
+	}
+	[ "$(uci -q get network.@device[-1].name)" != "br-main" ] && {
+		#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+		device=$(uci add network device)
+		uci -q batch <<-EOF
+			set network.${device}.type='bridge'
+			set network.${device}.name='br-main'
+			add_list network.${device}.ports='bat0'
+			set network.${device}.bridge_empty='1'
+		EOF
+	}
+
+	# Setup management VLAN
+	[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "254" ] && {
+		#TODO: see above
+		bridge_vlan=$(uci add network bridge-vlan)
+		uci -q batch <<-EOF
+			set network.${bridge_vlan}.vlan='254'
+			set network.${bridge_vlan}.device='br-main'
+			add_list network.${bridge_vlan}.ports='bat0:t'
+		EOF
+	}
+	## Setup mesh management Interface
+	local dist_nr="$(printf %d 0x$(uci -q get kb.main.dist))"
+	local uid_nr="$(printf %d 0x$(uci -q get kb.main.uid))"
+	[ -z "$(uci -q get network.mesh_mgmt)" ] && {
+		uci -q batch <<-EOF
+			set network.mesh_mgmt='interface'
+			set network.mesh_mgmt.proto='static'
+			set network.mesh_mgmt.device='br-main.254'
+			set network.mesh_mgmt.ipaddr='10.254.${dist_nr}.${uid_nr}'
+			set network.mesh_mgmt.netmask='255.255.0.0'
+			set network.mesh_mgmt.defaultroute='0'
+		EOF
+	}
+
+	# Setup disctict specific VLAN
+	[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "${dist_nr}" ] && {
+		#TODO: see above
+		bridge_vlan=$(uci add network bridge-vlan)
+		uci -q batch <<-EOF
+			set network.${bridge_vlan}.vlan='${dist_nr}'
+			set network.${bridge_vlan}.device='br-main'
+			add_list network.${bridge_vlan}.ports='bat0:t'
+		EOF
+	}
+	## Setup mesh public Interface
+	[ -z "$(uci -q get network.mesh_pub)" ] && {
+		uci -q batch <<-EOF
+			set network.mesh_pub='interface'
+			set network.mesh_pub.proto='static'
+			set network.mesh_pub.device='br-main.${dist_nr}'
+			set network.mesh_pub.ipaddr='10.${dist_nr}.${uid_nr}.1'
+			set network.mesh_pub.netmask='255.255.0.0'
+			set network.mesh_pub.defaultroute='0'
+		EOF
+	}
+
+	# Setup wireless interfaces
+	## Setup mesh interface
+	## TODO: We currently assume radio0 is on the 2g band. improve this to find the 2g radio and mesh there
+	local kb_ssid="$(uci -q get kb.main.ssid)"
+	local kb_psk="$(uci -q get kb.main.psk)"
+	[ -n "$(uci -q get wireless.radio0)" -a "$(uci -q get wireless.radio0.band)" = "2g" ] && {
+		uci -q batch <<-EOF
+			set wireless.kbmesh0=wifi-iface
+			set wireless.kbmesh0.device='radio0'
+			set wireless.kbmesh0.mode='mesh'
+			set wireless.kbmesh0.encryption='sae'
+			set wireless.kbmesh0.mesh_id='${kb_ssid}_mesh'
+			set wireless.kbmesh0.mesh_fwding='0'
+			set wireless.kbmesh0.mesh_rssi_threshold='0'
+			set wireless.kbmesh0.key='${kb_psk}'
+			set wireless.kbmesh0.network='batmesh'
+			set wireless.kbmesh0.ifname='m-11s-0'
+			set wireless.kbapmgmt0=wifi-iface
+			set wireless.kbapmgmt0.device='radio0'
+			set wireless.kbapmgmt0.mode='ap'
+			set wireless.kbapmgmt0.ssid='${prefix}-${state}-${dist}-${uid}_mgmt'
+			set wireless.kbapmgmt0.encryption='psk2'
+			set wireless.kbapmgmt0.key='${kb_psk}'
+			set wireless.kbapmgmt0.network='mesh_mgmt'
+			set wireless.kbapmgmt0.macaddr='random'
+		EOF
+		# Delete default APs if needed
+		uci -q del wireless.default_radio0
+		uci -q del wireless.default_radio1
+		# Enable wireless radio
+		uci set wireless.radio0.disabled=''
+	}
+
+	# Setup Firewall
+	## Mesh management zone
+	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_mgmt" ] && {
+		#TODO: improve check for firewall zone. see bridge
+		zone=$(uci add firewall zone)
+		uci -q batch <<-EOF
+			set firewall.${zone}.name='mesh_mgmt'
+			set firewall.${zone}.input='ACCEPT'
+			set firewall.${zone}.output='ACCEPT'
+			set firewall.${zone}.forward='REJECT'
+			add_list firewall.${zone}.network='mesh_mgmt'
+		EOF
+	}
+	## Mesh public zone
+	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_pub" ] && {
+		#TODO: improve check for firewall zone. see bridge
+		zone=$(uci add firewall zone)
+		uci -q batch <<-EOF
+			set firewall.${zone}.name='mesh_pub'
+			set firewall.${zone}.input='ACCEPT'
+			set firewall.${zone}.output='ACCEPT'
+			set firewall.${zone}.forward='REJECT'
+			add_list firewall.${zone}.network='mesh_pub'
+		EOF
+	}
+	### Mesh public forwarding
+	[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_pub" ] && {
+		#TODO: improve check for firewall forwarding. see bridge
+		forwarding=$(uci add firewall forwarding)
+		uci -q batch <<-EOF
+			set firewall.${forwarding}.src='mesh_pub'
+			set firewall.${forwarding}.dest='wan'
+		EOF
+	}
+
+	# Setup misc stuff
+	## Change uhttpd ports and https redirect
+	uci -q batch <<-EOF
+		set uhttpd.main.listen_http='8080'
+		set uhttpd.main.listen_https='8443'
+		set uhttpd.main.redirect_https='1'
+	EOF
+	## set root password
+	passwd root <<-EOF
+	${kb_psk}
+	${kb_psk}
+	EOF
+}
+
+# Check if board is supported
+board=$(board_name)
+case $board in
+bananapi,bpi-r3|\
+glinet,gl-mt3000)
+	board_supported=true
+	;;
+*)
+	board_supported=false
+	;;
+esac
+
+# Setup supported boards only
+if [ "${board_supported}" = true ] ; then
+	kb_config_system
+	kb_config_network
+	uci commit
+	echo "kb: configuration finished!"
+else
+	echo "kb: board ${board} not supported!"
+fi
+
+exit 0
