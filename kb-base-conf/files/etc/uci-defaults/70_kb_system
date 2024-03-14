@@ -231,6 +231,7 @@ kb_config_network() {
 board=$(board_name)
 case $board in
 bananapi,bpi-r3|\
+glinet,gl-ar300m16|\
 glinet,gl-mt3000)
 	board_supported=true
 	;;
