@@ -24,5 +24,20 @@ define Package/kb-extra-debug/description
 	Adds dependencies for packages usefull for debugging the (mesh) network
 endef
 
+# define some sections, needed to create an entry in the package database
+define Build/Configure
+endef
+
+define Build/Compile
+endef
+
+define Package/kb-extra-debug/install
+
+endef
+
+define Package/kb-extra-debug/postinst
+exit 0
+endef
+
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
 $(eval $(call BuildPackage,kb-extra-debug))
