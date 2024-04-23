@@ -21,7 +21,18 @@ endef
 
 # Package description; a more verbose description on what our package does
 define Package/kb-extra-storage/description
-	Adds dependencies for packages needed for usb storage
+	Adds dependencies for packages needed for external storage
+endef
+
+# define some sections, needed to create an entry in the package database
+define Build/Configure
+endef
+
+define Build/Compile
+endef
+
+define Package/kb-extra-storage/install
+	exit 0
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
