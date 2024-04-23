@@ -15,7 +15,7 @@ define Package/kb-base-conf
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox basefiles and setup scripts
-  DEPENDS:=+wpad-mbedtls +mesh11sd +luci-proto-batman-adv +kmod-batman-adv +batctl-full +ip-bridge +shadow-usermod
+  DEPENDS:=+wpad-mbedtls +mesh11sd +luci-proto-batman-adv +kmod-batman-adv +batctl-full +ip-bridge +shadow-utils +shadow-usermod
   PKGARCH:=all
 endef
 
@@ -26,6 +26,9 @@ endef
 
 define Package/kb-base-conf/conffiles
 /etc/config/kb
+/etc/config/kbproj
+/etc/config/kboxes
+/etc/config/kbdist
 endef
 
 define Build/Configure
@@ -37,12 +40,9 @@ endef
 # Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
 define Package/kb-base-conf/install
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/etc/config/kb $(1)/etc/config
 	$(INSTALL_DATA) ./files/etc/config/mesh11sd $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_system $(1)/etc/uci-defaults
-	$(INSTALL_DIR) $(1)/etc/dropbear
-	$(INSTALL_DATA) ./files/etc/dropbear/authorized_keys $(1)/etc/dropbear
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
