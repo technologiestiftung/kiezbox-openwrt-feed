@@ -15,7 +15,7 @@ define Package/kb-extra-storage
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox extra packages for usb storage
-  DEPENDS:=+block-mount +e2fsprogs +kmod-usb-storage-uas +kmod-usb3 +kmod-fs-ext4
+  DEPENDS:=+block-mount +e2fsprogs +kmod-usb-storage-uas +kmod-usb3 +kmod-fs-ext4 +fdisk
   PKGARCH:=all
 endef
 
