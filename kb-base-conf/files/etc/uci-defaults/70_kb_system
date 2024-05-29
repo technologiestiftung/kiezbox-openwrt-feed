@@ -132,14 +132,27 @@ kb_config_network() {
 		EOF
 	}
 	## Setup mesh public Interface
+	local box_ip_pub="10.${dist_nr}.${box_nr}.1"
 	[ -z "$(uci -q get network.mesh_pub)" ] && {
 		uci -q batch <<-EOF
 			set network.mesh_pub='interface'
 			set network.mesh_pub.proto='static'
 			set network.mesh_pub.device='br-main.${dist_nr}'
-			set network.mesh_pub.ipaddr='10.${dist_nr}.${box_nr}.1'
+			set network.mesh_pub.ipaddr='${box_ip_pub}'
 			set network.mesh_pub.netmask='255.255.0.0'
 			set network.mesh_pub.defaultroute='0'
+		EOF
+	}
+
+	## Setup mesh public Interface
+	[ -z "$(uci -q get dhcp.mesh_pub)" ] && {
+		uci -q batch <<-EOF
+			set dhcp.mesh_pub=dhcp
+			set dhcp.mesh_pub.interface='mesh_pub'
+			set dhcp.mesh_pub.start='10'
+			set dhcp.mesh_pub.limit='240'
+			set dhcp.mesh_pub.leasetime='12h'
+			set dhcp.mesh_pub.netmask='255.255.255.0'
 		EOF
 	}
 
@@ -168,6 +181,12 @@ kb_config_network() {
 			set wireless.kbapmgmt0.key='${proj_psk}'
 			set wireless.kbapmgmt0.network='mesh_mgmt'
 			set wireless.kbapmgmt0.macaddr='random'
+			set wireless.kbappub0=wifi-iface
+			set wireless.kbappub0.device='radio0'
+			set wireless.kbappub0.mode='ap'
+			set wireless.kbappub0.ssid='${proj_ssid}'
+			set wireless.kbappub0.encryption='none'
+			set wireless.kbappub0.network='mesh_pub'
 		EOF
 		# Delete default APs if needed
 		uci -q del wireless.default_radio0
@@ -209,6 +228,18 @@ kb_config_network() {
 			set firewall.${forwarding}.src='mesh_pub'
 			set firewall.${forwarding}.dest='wan'
 		EOF
+	}
+	### Setup host/DNS entries for captive portal forwarding
+	[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_ssid}" ] && {
+		#TODO: improve check for domain entry. see bridge
+		local portal_domains='connectivitycheck.gstatic.com detectportal.firefox.com captive.apple.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com kiez.box'
+		for portal_domain in ${portal_domains}; do
+			domain=$(uci add dhcp domain)
+			uci -q batch <<-EOF
+				set dhcp.${domain}.name='${portal_domain}'
+				set dhcp.${domain}.ip='${box_ip_pub}'
+			EOF
+		done
 	}
 }
 
