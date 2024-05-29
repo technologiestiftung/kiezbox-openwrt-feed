@@ -232,7 +232,11 @@ kb_config_network() {
 	### Setup host/DNS entries for captive portal forwarding
 	[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_ssid}" ] && {
 		#TODO: improve check for domain entry. see bridge
-		local portal_domains='connectivitycheck.gstatic.com detectportal.firefox.com captive.apple.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com kiez.box'
+		## list of portal domains was partially taken from https://captivebehavior.wballiance.com/ , some other place i forgot about and our own tests
+		#TODO: add FireOS
+		#TODO: check with different devices
+		#TODO: change this longterm to allow internet access after initial information/page
+		local portal_domains='www.apple.com www.appleiphonecell.com captive.apple.com www.airport.us www.ibook.info www.itools.info www.thinkdifferent.us apple.com clients3.google.com clients4.google.com android.clients.google.com connectivitycheck.android.com connectivitycheck.gstatic.com www.gstatic.com www.google.com www.androidbak.net detectportal.firefox.com d2uzsrnmmf6tds.cloudfront.net msftncsi.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com kiez.box'
 		for portal_domain in ${portal_domains}; do
 			domain=$(uci add dhcp domain)
 			uci -q batch <<-EOF
