@@ -32,7 +32,8 @@ define Build/Compile
 endef
 
 define Package/kb-extra-app-deps/install
-	exit 0
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/kb-app.init $(1)/etc/init.d/kb-app
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
