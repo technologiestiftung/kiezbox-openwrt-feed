@@ -187,6 +187,7 @@ kb_config_network() {
 			set wireless.kbappub0.ssid='${proj_ssid}'
 			set wireless.kbappub0.encryption='none'
 			set wireless.kbappub0.network='mesh_pub'
+			set wireless.kbappub0.macaddr='random'
 		EOF
 		# Delete default APs if needed
 		uci -q del wireless.default_radio0
