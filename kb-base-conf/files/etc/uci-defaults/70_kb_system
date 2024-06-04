@@ -77,6 +77,7 @@ kb_config_network() {
 			set network.bat0.routing_algo='BATMAN_IV'
 			set network.bat0.gw_mode='off'
 			set network.bat0.hop_penalty='30'
+			set network.bat0.distributed_arp_table='0'
 		EOF
 	}
 	# setup openwrt batman interface
