@@ -57,6 +57,13 @@ kb_config_system() {
 		set uhttpd.main.listen_https='8443'
 		set uhttpd.main.redirect_https='1'
 	EOF
+	## Add uhttpd for kb_www
+	uci -q batch <<-EOF
+		set uhttpd.kb_www=uhttpd
+		set uhttpd.kb_www.listen_http='80'
+		set uhttpd.kb_www.home='/opt/kb-www'
+		set uhttpd.kb_www.error_page='/index.html'
+	EOF
 	## set root password
 	local proj_rootpw="$(uci -q get kbproj.main.rootpw)"
 	usermod -p "${proj_rootpw}" root

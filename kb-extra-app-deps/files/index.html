@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiexbox Frontend!</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            user-select: none; /* Prevent text selection */
+        }
+
+        #word-container {
+            position: absolute;
+            width: 200px; /* Increase clickable area width */
+            height: 100px; /* Increase clickable area height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Make the container non-interactive */
+            white-space: nowrap; /* Ensure the text stays in a single line */
+        }
+
+        #word {
+            font-size: 3rem;
+            background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: rainbow 1s linear infinite;
+            transition: transform 2s linear;
+            pointer-events: auto; /* Make the text itself interactive */
+        }
+
+        @keyframes rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="word-container">
+        <div id="word">Coming Soon!</div>
+    </div>
+
+    <script>
+        const wordContainer = document.getElementById('word-container');
+        const word = document.getElementById('word');
+        let posX = 0;
+        let posY = 0;
+        let speedX = 4; // Increased speed
+        let speedY = 4; // Increased speed
+        const wordWidth = word.clientWidth;
+        const wordHeight = word.clientHeight;
+        let angle = 0;
+        let spinning = true;
+
+        function updatePosition() {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            posX += speedX;
+            posY += speedY;
+
+            if (posX + wordWidth > windowWidth || posX < 0) {
+                speedX *= -1;
+            }
+
+            if (posY + wordHeight > windowHeight || posY < 0) {
+                speedY *= -1;
+            }
+
+            wordContainer.style.left = posX + 'px';
+            wordContainer.style.top = posY + 'px';
+
+            if (spinning) {
+                angle += 4; // Adjust the angle increment for desired speed
+                word.style.transform = `rotate(${angle}deg)`;
+            }
+
+            requestAnimationFrame(updatePosition);
+        }
+
+        function changeSpinDirection() {
+            spinning = false;
+            setTimeout(() => {
+                angle = (Math.round(angle / 360) * 360); // Snap to the nearest full rotation without adding an extra 360
+                word.style.transform = `rotate(${angle}deg)`;
+                setTimeout(() => {
+                    spinning = true;
+                }, 2000);
+            }, 2000);
+        }
+
+        function changeMovementDirection() {
+            speedX = (Math.random() * 4 + 2) * (Math.random() > 0.5 ? 1 : -1); // Random speed between 2 and 6
+            speedY = (Math.random() * 4 + 2) * (Math.random() > 0.5 ? 1 : -1); // Random speed between 2 and 6
+        }
+
+        wordContainer.addEventListener('click', changeMovementDirection);
+
+        setInterval(changeSpinDirection, 6000); // Change spin direction every 6 seconds
+
+        updatePosition();
+    </script>
+</body>
+</html>

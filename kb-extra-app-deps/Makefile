@@ -34,6 +34,8 @@ endef
 define Package/kb-extra-app-deps/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/kb-app.init $(1)/etc/init.d/kb-app
+	$(INSTALL_DIR) $(1)/opt/kb-www
+	$(INSTALL_BIN) ./files/index.html $(1)/opt/kb-www
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
