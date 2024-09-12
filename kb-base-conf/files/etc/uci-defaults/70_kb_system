@@ -26,7 +26,7 @@ kb_init_config() {
 	[ "$(uci get kb.main.state)" = "u" ] && {
 		uci -q batch <<-EOF
 			set kb.main.state='a'
-			set kb.main.dist_id='fd'
+			set kb.main.dist_id='00'
 			set kb.main.box_id='${board_uid: -2}'
 			set kb.main.box_name='Auto-${board_uid}'
 		EOF
@@ -96,14 +96,31 @@ kb_config_network() {
 			set network.batmesh.mtu='1536'
 		EOF
 	}
+	# setup main mesh bridge interface
 	[ "$(uci -q get network.@device[-1].name)" != "br-main" ] && {
 		#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+		#TODO: use OpenWRT OUI for personal device, as soon as it is available/announced
 		device=$(uci add network device)
 		uci -q batch <<-EOF
 			set network.${device}.type='bridge'
 			set network.${device}.name='br-main'
 			add_list network.${device}.ports='bat0'
 			set network.${device}.bridge_empty='1'
+			set network.${device}.macaddr='22:02:6b:75:${dist_id}:${box_id}'
+		EOF
+	}
+	# setup client bridge interface
+	[ "$(uci -q get network.@device[-1].name)" != "br-client" ] && {
+		#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+		#TODO: use OpenWRT OUI for personal device, as soon as it is available/announced
+		#TODO: adding bridge ports here is device specific. work that out later
+		device=$(uci add network device)
+		uci -q batch <<-EOF
+			set network.${device}.type='bridge'
+			set network.${device}.name='br-client'
+			add_list network.${device}.ports='lan4'
+			set network.${device}.bridge_empty='1'
+			set network.${device}.macaddr='32:02:6b:75:${dist_id}:${box_id}'
 		EOF
 	}
 
@@ -129,6 +146,28 @@ kb_config_network() {
 		EOF
 	}
 
+	# Setup backhaul VLAN
+	[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "253" ] && {
+		#TODO: see above
+		bridge_vlan=$(uci add network bridge-vlan)
+		uci -q batch <<-EOF
+			set network.${bridge_vlan}.vlan='253'
+			set network.${bridge_vlan}.device='br-main'
+			add_list network.${bridge_vlan}.ports='bat0:t'
+		EOF
+	}
+	## Setup mesh backhaul Interface
+	[ -z "$(uci -q get network.mesh_bkhl)" ] && {
+		uci -q batch <<-EOF
+			set network.mesh_bkhl='interface'
+			set network.mesh_bkhl.proto='static'
+			set network.mesh_bkhl.device='br-main.253'
+			set network.mesh_bkhl.ipaddr='10.253.${dist_nr}.${box_nr}'
+			set network.mesh_bkhl.netmask='255.255.0.0'
+			set network.mesh_bkhl.defaultroute='0'
+		EOF
+	}
+
 	# Setup disctict specific VLAN
 	[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "${dist_nr}" ] && {
 		#TODO: see above
@@ -139,28 +178,41 @@ kb_config_network() {
 			add_list network.${bridge_vlan}.ports='bat0:t'
 		EOF
 	}
-	## Setup mesh public Interface
-	local box_ip_pub="10.${dist_nr}.${box_nr}.1"
-	[ -z "$(uci -q get network.mesh_pub)" ] && {
+	## Setup mesh district Interface
+	local box_ip_dist="10.${dist_nr}.${box_nr}.1"
+	[ -z "$(uci -q get network.mesh_dist)" ] && {
 		uci -q batch <<-EOF
-			set network.mesh_pub='interface'
-			set network.mesh_pub.proto='static'
-			set network.mesh_pub.device='br-main.${dist_nr}'
-			set network.mesh_pub.ipaddr='${box_ip_pub}'
-			set network.mesh_pub.netmask='255.255.0.0'
-			set network.mesh_pub.defaultroute='0'
+			set network.mesh_dist='interface'
+			set network.mesh_dist.proto='static'
+			set network.mesh_dist.device='br-main.${dist_nr}'
+			set network.mesh_dist.ipaddr='${box_ip_dist}'
+			set network.mesh_dist.netmask='255.255.0.0'
+			set network.mesh_dist.defaultroute='0'
 		EOF
 	}
 
-	## Setup mesh public Interface
-	[ -z "$(uci -q get dhcp.mesh_pub)" ] && {
+	## Setup mesh client Interface
+	local box_ip_client="10.252.0.1"
+	[ -z "$(uci -q get network.mesh_client)" ] && {
 		uci -q batch <<-EOF
-			set dhcp.mesh_pub=dhcp
-			set dhcp.mesh_pub.interface='mesh_pub'
-			set dhcp.mesh_pub.start='10'
-			set dhcp.mesh_pub.limit='240'
-			set dhcp.mesh_pub.leasetime='12h'
-			set dhcp.mesh_pub.netmask='255.255.255.0'
+			set network.mesh_client='interface'
+			set network.mesh_client.proto='static'
+			set network.mesh_client.device='br-client'
+			set network.mesh_client.ipaddr='${box_ip_client}'
+			set network.mesh_client.netmask='255.255.0.0'
+			set network.mesh_client.defaultroute='0'
+		EOF
+	}
+	## Setup mesh client dhcp
+	#TODO: update arbitrary client limit of 1000 to something realisitc. check for performance impact of high number of leases
+	[ -z "$(uci -q get dhcp.mesh_client)" ] && {
+		uci -q batch <<-EOF
+			set dhcp.mesh_client=dhcp
+			set dhcp.mesh_client.interface='mesh_client'
+			set dhcp.mesh_client.start='10'
+			set dhcp.mesh_client.limit='1000'
+			set dhcp.mesh_client.leasetime='12h'
+			set dhcp.mesh_client.netmask='255.255.0.0'
 		EOF
 	}
 
@@ -189,13 +241,13 @@ kb_config_network() {
 			set wireless.kbapmgmt0.key='${proj_psk}'
 			set wireless.kbapmgmt0.network='mesh_mgmt'
 			set wireless.kbapmgmt0.macaddr='random'
-			set wireless.kbappub0=wifi-iface
-			set wireless.kbappub0.device='radio0'
-			set wireless.kbappub0.mode='ap'
-			set wireless.kbappub0.ssid='${proj_ssid}'
-			set wireless.kbappub0.encryption='none'
-			set wireless.kbappub0.network='mesh_pub'
-			set wireless.kbappub0.macaddr='random'
+			set wireless.kbapclient0=wifi-iface
+			set wireless.kbapclient0.device='radio0'
+			set wireless.kbapclient0.mode='ap'
+			set wireless.kbapclient0.ssid='${proj_ssid}'
+			set wireless.kbapclient0.encryption='none'
+			set wireless.kbapclient0.network='mesh_client'
+			set wireless.kbapclient0.macaddr='random'
 		EOF
 		# Delete default APs if needed
 		uci -q del wireless.default_radio0
@@ -217,25 +269,51 @@ kb_config_network() {
 			add_list firewall.${zone}.network='mesh_mgmt'
 		EOF
 	}
-	## Mesh public zone
-	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_pub" ] && {
+	## Mesh backhaul zone
+	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_bkhl" ] && {
 		#TODO: improve check for firewall zone. see bridge
 		zone=$(uci add firewall zone)
 		uci -q batch <<-EOF
-			set firewall.${zone}.name='mesh_pub'
+			set firewall.${zone}.name='mesh_bkhl'
+			set firewall.${zone}.input='REJECT'
+			set firewall.${zone}.output='ACCEPT'
+			set firewall.${zone}.forward='ACCEPT'
+			set firewall.${zone}.masq='1'
+			add_list firewall.${zone}.network='mesh_bkhl'
+		EOF
+	}
+	## Mesh district zone
+	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_dist" ] && {
+		#TODO: improve check for firewall zone. see bridge
+		zone=$(uci add firewall zone)
+		uci -q batch <<-EOF
+			set firewall.${zone}.name='mesh_dist'
 			set firewall.${zone}.input='ACCEPT'
 			set firewall.${zone}.output='ACCEPT'
 			set firewall.${zone}.forward='REJECT'
-			add_list firewall.${zone}.network='mesh_pub'
+			add_list firewall.${zone}.network='mesh_dist'
 		EOF
 	}
-	### Mesh public forwarding
-	[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_pub" ] && {
+	## Mesh district zone
+	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_client" ] && {
+		#TODO: improve check for firewall zone. see bridge
+		#TODO: set up client wifi firewall more permissive
+		zone=$(uci add firewall zone)
+		uci -q batch <<-EOF
+			set firewall.${zone}.name='mesh_client'
+			set firewall.${zone}.input='ACCEPT'
+			set firewall.${zone}.output='ACCEPT'
+			set firewall.${zone}.forward='REJECT'
+			add_list firewall.${zone}.network='mesh_client'
+		EOF
+	}
+	### Mesh client forwarding to backhaul
+	[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_client" ] && {
 		#TODO: improve check for firewall forwarding. see bridge
 		forwarding=$(uci add firewall forwarding)
 		uci -q batch <<-EOF
-			set firewall.${forwarding}.src='mesh_pub'
-			set firewall.${forwarding}.dest='wan'
+			set firewall.${forwarding}.src='mesh_client'
+			set firewall.${forwarding}.dest='mesh_bkhl'
 		EOF
 	}
 	### Setup host/DNS entries for captive portal forwarding
@@ -245,12 +323,12 @@ kb_config_network() {
 		#TODO: add FireOS
 		#TODO: check with different devices
 		#TODO: change this longterm to allow internet access after initial information/page
-		local portal_domains='www.apple.com www.appleiphonecell.com captive.apple.com www.airport.us www.ibook.info www.itools.info www.thinkdifferent.us apple.com clients3.google.com clients4.google.com android.clients.google.com connectivitycheck.android.com connectivitycheck.gstatic.com www.gstatic.com www.google.com www.androidbak.net detectportal.firefox.com d2uzsrnmmf6tds.cloudfront.net msftncsi.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com kiez.box'
+		local portal_domains="www.apple.com www.appleiphonecell.com captive.apple.com www.airport.us www.ibook.info www.itools.info www.thinkdifferent.us apple.com clients3.google.com clients4.google.com android.clients.google.com connectivitycheck.android.com connectivitycheck.gstatic.com www.gstatic.com www.google.com www.androidbak.net detectportal.firefox.com d2uzsrnmmf6tds.cloudfront.net msftncsi.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com ${proj_ssid}"
 		for portal_domain in ${portal_domains}; do
 			domain=$(uci add dhcp domain)
 			uci -q batch <<-EOF
 				set dhcp.${domain}.name='${portal_domain}'
-				set dhcp.${domain}.ip='${box_ip_pub}'
+				set dhcp.${domain}.ip='${box_ip_client}'
 			EOF
 		done
 	}
