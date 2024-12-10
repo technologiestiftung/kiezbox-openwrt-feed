@@ -6,12 +6,12 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-gateway-service
 PKG_VERSION:=1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=4e852726e589d798c602f4d11422b91a0f0056a0
-PKG_MIRROR_HASH:=bd4153cfa762173f7efb1528754ced4b0fb0eefd4748bca21dc05df48f843a2e
+PKG_SOURCE_VERSION:=195c241c55e03c16fa7af72854b616719ad37de5
+PKG_MIRROR_HASH:=f103eafec58443cef469232db74aafec4ec5f0faf2aefc8aa09c9cdb854f1c96
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
@@ -28,7 +28,7 @@ define Package/kb-gateway-service
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox gateway service
-  DEPENDS:=$(GO_ARCH_DEPENDS)
+  DEPENDS:=$(GO_ARCH_DEPENDS) +kmod-usb-serial-cp210x
 endef
 
 # Package description; a more verbose description on what our package does
@@ -39,6 +39,8 @@ endef
 # Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
 define Package/kb-gateway-service/install
 	$(call GoPackage/Package/Install/Bin,$(1))
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/kb-gateway.init $(1)/etc/init.d/kb-gateway
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
