@@ -6,12 +6,12 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-gateway-service
 PKG_VERSION:=1.0
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=dc0dd42619fdf2a7318b632572a8eae800ebd6d0
-PKG_MIRROR_HASH:=554eabbee578195516707baced26ae218740186d9620439ead3c9c07793088f5
+PKG_SOURCE_VERSION:=1a3a811e9a6301a592c1eeb79cb502ced9d8f062
+PKG_MIRROR_HASH:=8dad69f2a62129f91b57314fe5b87f9a7c83fb1d28cc72a9273b251d8c12f655
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
