@@ -63,6 +63,10 @@ kb_config_system() {
 		set uhttpd.kb_www.listen_http='80'
 		set uhttpd.kb_www.home='/opt/kb-www'
 		set uhttpd.kb_www.error_page='/index.html'
+		set uhttpd.kb_www.listen_https='443'
+		set uhttpd.kb_www.cert='/etc/uhttpd.crt'
+		set uhttpd.kb_www.key='/etc/uhttpd.key'
+		set uhttpd.kb_www.redirect_https='1'
 	EOF
 	## set root password
 	local proj_rootpw="$(uci -q get kbproj.main.rootpw)"
