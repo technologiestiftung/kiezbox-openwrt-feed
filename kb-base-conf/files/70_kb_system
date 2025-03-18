@@ -262,6 +262,7 @@ kb_config_network() {
 			set wireless.kbapclient0.encryption='none'
 			set wireless.kbapclient0.network='mesh_client'
 			set wireless.kbapclient0.macaddr='random'
+			set wireless.kbapclient0.disabled='1'
 		EOF
 		# Delete default APs if needed
 		uci -q del wireless.default_radio0
