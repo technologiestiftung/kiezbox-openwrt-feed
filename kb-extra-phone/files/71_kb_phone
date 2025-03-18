@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+### Enable asterisk
+uci -q batch <<-EOF
+	set asterisk.general.enabled='1'
+EOF
+uci commit
+exit 0
