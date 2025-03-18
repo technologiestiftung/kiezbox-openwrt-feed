@@ -341,6 +341,12 @@ kb_config_network() {
 	uci -q batch <<-EOF
 		set network.lan.ipaddr='172.23.42.1'
 	EOF
+	### - accept input on wan zone to allow access on local network
+	[ "$(uci -q get firewall.@zone[1].name)" == "wan" ] && {
+		uci -q batch <<-EOF
+			set firewall.@zone[1].input='ACCEPT'
+		EOF
+	}
 
 }
 
