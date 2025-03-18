@@ -168,8 +168,18 @@ kb_config_network() {
 			set network.mesh_bkhl.device='br-main.253'
 			set network.mesh_bkhl.ipaddr='10.253.${dist_nr}.${box_nr}'
 			set network.mesh_bkhl.netmask='255.255.0.0'
-			set network.mesh_bkhl.defaultroute='0'
 		EOF
+		[ "${box_nr}" == "1" ] && {
+			uci -q batch <<-EOF
+				set network.mesh_bkhl.defaultroute='0'
+			EOF
+		} || {
+			uci -q batch <<-EOF
+				set network.mesh_bkhl.gateway='10.253.${dist_nr}.1'
+				set network.mesh_bkhl.dns='10.253.${dist_nr}.1'
+				set network.mesh_bkhl.metric='1000'
+			EOF
+		}
 	}
 
 	# Setup disctict specific VLAN
@@ -279,11 +289,20 @@ kb_config_network() {
 		zone=$(uci add firewall zone)
 		uci -q batch <<-EOF
 			set firewall.${zone}.name='mesh_bkhl'
-			set firewall.${zone}.input='REJECT'
+			set firewall.${zone}.input='ACCEPT'
 			set firewall.${zone}.output='ACCEPT'
 			set firewall.${zone}.forward='ACCEPT'
 			set firewall.${zone}.masq='1'
 			add_list firewall.${zone}.network='mesh_bkhl'
+		EOF
+	}
+	### Mesh backhaul forwarding to wan
+	[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_bkhl" ] && {
+		#TODO: improve check for firewall forwarding. see bridge
+		forwarding=$(uci add firewall forwarding)
+		uci -q batch <<-EOF
+			set firewall.${forwarding}.src='mesh_bkhl'
+			set firewall.${forwarding}.dest='wan'
 		EOF
 	}
 	## Mesh district zone
