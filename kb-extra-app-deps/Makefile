@@ -14,14 +14,14 @@ include $(INCLUDE_DIR)/package.mk
 define Package/kb-extra-app-deps
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
-  TITLE:=KiezBox extra packages for messages app
+  TITLE:=(DEPRECATED) Kiezbox extra packages for messages app
   DEPENDS:=+python3 +python3-venv +python3-pip +git +git-http
   PKGARCH:=all
 endef
 
 # Package description; a more verbose description on what our package does
 define Package/kb-extra-app-deps/description
-	Adds dependencies for deploying the python based messages app
+	Adds dependencies for deploying the python based messages app (DEPRECATED)
 endef
 
 # define some sections, needed to create an entry in the package database
