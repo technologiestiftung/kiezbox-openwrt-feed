@@ -336,6 +336,12 @@ kb_config_network() {
 			EOF
 		done
 	}
+	### miscellaneous changes and fixes
+	### - use rather obscure subnet on lan to reduce collisions with wan/dhcp
+	uci -q batch <<-EOF
+		set network.lan.ipaddr='172.23.42.1'
+	EOF
+
 }
 
 # Check if board is supported (board_supported)
