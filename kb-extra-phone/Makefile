@@ -33,9 +33,9 @@ endef
 
 define Package/kb-extra-phone/install
 	$(INSTALL_DIR) $(1)/etc/asterisk
-	$(INSTALL_BIN) ./files/http.conf $(1)/etc/asterisk/http.conf
-	$(INSTALL_BIN) ./files/extensions.conf $(1)/etc/asterisk/extensions.conf
-	$(INSTALL_BIN) ./files/pjsip.conf $(1)/etc/asterisk/pjsip.conf
+	$(INSTALL_DATA) ./files/http.conf $(1)/etc/asterisk/http.conf
+	$(INSTALL_DATA) ./files/extensions.conf $(1)/etc/asterisk/extensions.conf
+	$(INSTALL_DATA) ./files/pjsip.conf $(1)/etc/asterisk/pjsip.conf
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_DATA) ./files/71_kb_phone $(1)/etc/uci-defaults
 endef
