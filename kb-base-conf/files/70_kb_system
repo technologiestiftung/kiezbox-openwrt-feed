@@ -59,17 +59,6 @@ kb_config_system() {
 		set uhttpd.main.cert='/opt/kb-certs/fullchain.pem'
 		set uhttpd.main.key='/opt/kb-certs/privkey.pem'
 	EOF
-	## Add uhttpd for kb_www
-	uci -q batch <<-EOF
-		set uhttpd.kb_www=uhttpd
-		set uhttpd.kb_www.listen_http='80'
-		set uhttpd.kb_www.home='/opt/kb-www'
-		set uhttpd.kb_www.error_page='/index.html'
-		set uhttpd.kb_www.listen_https='443'
-		set uhttpd.kb_www.cert='/opt/kb-certs/fullchain.pem'
-		set uhttpd.kb_www.key='/opt/kb-certs/privkey.pem'
-		set uhttpd.kb_www.redirect_https='1'
-	EOF
 	## set root password
 	local proj_rootpw="$(uci -q get kbproj.main.rootpw)"
 	usermod -p "${proj_rootpw}" root
@@ -341,6 +330,11 @@ kb_config_network() {
 		uci -q batch <<-EOF
 			set firewall.${forwarding}.src='mesh_client'
 			set firewall.${forwarding}.dest='mesh_bkhl'
+		EOF
+		forwarding=$(uci add firewall forwarding)
+		uci -q batch <<-EOF
+			set firewall.${forwarding}.src='mesh_client'
+			set firewall.${forwarding}.dest='wan'
 		EOF
 	}
 	### Setup host/DNS entries for captive portal forwarding
