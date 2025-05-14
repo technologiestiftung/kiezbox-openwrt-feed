@@ -30,6 +30,10 @@ endef
 define Package/kb-extra-app/install
 	$(INSTALL_DIR) $(1)/opt/kb-www
 	cp -r ./files/app/* $(1)/opt/kb-www
+	$(INSTALL_DIR) $(1)/etc/lighttpd/conf.d
+	$(INSTALL_DATA) ./files/90_kiezbox.conf $(1)/etc/lighttpd/conf.d/90_kiezbox.conf
+	$(INSTALL_DIR) $(1)/opt/kb-script
+	$(INSTALL_BIN) ./files/lighttpd_config.sh $(1)/opt/kb-script/lighttpd_config.sh
 endef
 
 $(eval $(call BuildPackage,kb-extra-app))
