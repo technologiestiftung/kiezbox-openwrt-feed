@@ -20,6 +20,10 @@ kb_init_config() {
 				set kb.main.dist_id='$(uci get kboxes.${board_uid}.dist_id)'
 				set kb.main.box_id='$(uci get kboxes.${board_uid}.box_id)'
 				set kb.main.box_name='$(uci get kboxes.${board_uid}.box_name)'
+				set kb.main.trunk_base='$(uci get kboxes.${board_uid}.trunk_base)'
+				set kb.main.trunk_pw='$(uci get kboxes.${board_uid}.trunk_pw)'
+				set kb.main.trunk_domain='$(uci get kboxes.${board_uid}.trunk_domain)'
+				set kb.main.trunk_calls='$(uci get kboxes.${board_uid}.trunk_calls)'
 			EOF
 		}
 	}
