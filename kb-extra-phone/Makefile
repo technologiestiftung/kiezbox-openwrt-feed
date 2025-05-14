@@ -33,11 +33,12 @@ endef
 
 define Package/kb-extra-phone/install
 	$(INSTALL_DIR) $(1)/etc/asterisk
-	$(INSTALL_DATA) ./files/http.conf $(1)/etc/asterisk/http.conf
-	$(INSTALL_DATA) ./files/extensions.conf $(1)/etc/asterisk/extensions.conf
-	$(INSTALL_DATA) ./files/pjsip.conf $(1)/etc/asterisk/pjsip.conf
+	$(INSTALL_DATA) ./files/etc/asterisk/*.conf $(1)/etc/asterisk/
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_DATA) ./files/71_kb_phone $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/etc/uci-defaults/71_kb_phone $(1)/etc/uci-defaults
+	$(INSTALL_DIR) $(1)/opt/kb-script
+	$(INSTALL_BIN) ./files/opt/kb-script/asterisk_pjsip.sh $(1)/opt/kb-script
+	$(INSTALL_BIN) ./files/opt/kb-script/asterisk_extensions.sh $(1)/opt/kb-script
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
