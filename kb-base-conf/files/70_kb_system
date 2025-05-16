@@ -213,6 +213,7 @@ kb_config_network() {
 		EOF
 	}
 	## Setup mesh client dhcp
+	local proj_domain="$(uci -q get kbproj.main.domain)"
 	#TODO: update arbitrary client limit of 1000 to something realisitc. check for performance impact of high number of leases
 	[ -z "$(uci -q get dhcp.mesh_client)" ] && {
 		uci -q batch <<-EOF
@@ -222,6 +223,7 @@ kb_config_network() {
 			set dhcp.mesh_client.limit='1000'
 			set dhcp.mesh_client.leasetime='12h'
 			set dhcp.mesh_client.netmask='255.255.0.0'
+			set dhcp.mesh_client.dhcp_option='114,https://${proj_domain}/captive-portal/api.json'
 		EOF
 	}
 
@@ -229,7 +231,6 @@ kb_config_network() {
 	## Setup mesh interface
 	## TODO: We currently assume radio0 is on the 2g band. improve this to find the 2g radio and mesh there
 	local proj_ssid="$(uci -q get kbproj.main.ssid)"
-	local proj_domain="$(uci -q get kbproj.main.domain)"
 	local proj_psk="$(uci -q get kbproj.main.psk)"
 	[ -n "$(uci -q get wireless.radio0)" -a "$(uci -q get wireless.radio0.band)" = "2g" ] && {
 		uci -q batch <<-EOF
