@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-extra-phone
 PKG_VERSION:=1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -39,6 +39,8 @@ define Package/kb-extra-phone/install
 	$(INSTALL_DIR) $(1)/opt/kb-script
 	$(INSTALL_BIN) ./files/opt/kb-script/asterisk_pjsip.sh $(1)/opt/kb-script
 	$(INSTALL_BIN) ./files/opt/kb-script/asterisk_extensions.sh $(1)/opt/kb-script
+	$(INSTALL_DIR) $(1)/opt/kb-moh
+	$(INSTALL_DATA) ./files/opt/kb-moh/* $(1)/opt/kb-moh/
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
