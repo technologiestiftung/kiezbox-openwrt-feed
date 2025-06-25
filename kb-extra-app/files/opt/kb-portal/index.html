@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kiezbox Captive Portal</title>
+  <style>
+html {
+  font-size: 150%;
+}
+
+button {
+  font-size: 1em;        /* inherit doubled font size */
+}
+    #logPopup {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      background: black;
+      color: white;
+      padding: 5px 10px;
+      display: none;
+      font-family: monospace;
+      font-size: 12px;
+      max-width: 300px;
+      word-wrap: break-word;
+    }
+    #logPopup.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Kiezbox captive portal</h1>
+  <p>Work in progress...</p>
+  <ul>
+    <li><a href="/">Open root (/) in same tab</a></li>
+    <li><a href="/" target="_blank" rel="noopener noreferrer">Open root (/) in new tab</a></li>
+    <li><a href="/" target="_system" rel="noopener noreferrer">Open root (/) in system browser (lol)</a></li>
+    <li><button id="shareButton">Share (/) link</button></li>
+    <li><button id="copyButton">Copy (/) URL to Clipboard</button></li>
+    <li><button id="checkAudio">Check Audio Recording Support</button></li>
+    <li><button id="checkPWA">Check PWA Support</button></li>
+    <li><button id="checkAudioPerm">Check Audio Permission</button></li>
+    <li><button id="registerSWBtn">Register Service Worker</button></li>
+    <li><button id="requestPermissionBtn">Request Notification Permission</button></li>
+    <li><button id="notifyBtn">Show Notification & Open '/' on click</button></li>
+    <li><button onclick="sendRequest('setmefree')">Set me freee!!!!</button></li>
+    <li><button onclick="sendRequest('jailmepls')">Jail me pls!!!!</button></li>
+  </ul>
+
+  <div id="logPopup"></div>
+
+  <script>
+    const shareButton = document.getElementById("shareButton");
+    const copyButton = document.getElementById("copyButton");
+    const logPopup = document.getElementById("logPopup");
+    const baseUrl = window.location.origin;
+
+    function showPopup(message) {
+      logPopup.textContent = message;
+      logPopup.classList.add("show");
+      clearTimeout(logPopup.hideTimeout);
+      logPopup.hideTimeout = setTimeout(() => {
+        logPopup.classList.remove("show");
+      }, 3000);
+    }
+
+    function log_and_popup(message, level = "log") {
+      if (level === "error") {
+        console.error(message);
+        showPopup("Error: " + message);
+      } else {
+        console.log(message);
+        showPopup(message);
+      }
+    }
+
+    async function shareUrl() {
+      log_and_popup("Sharing initiated...");
+      try {
+        await navigator.share({
+          title: "Kiezbox Captive Portal",
+          url: baseUrl
+        });
+        log_and_popup("Data was shared successfully");
+      } catch (err) {
+        log_and_popup("Share failed: " + err.message, "error");
+      }
+    }
+
+    function copyUrlToClipboard() {
+      navigator.clipboard.writeText(baseUrl)
+        .then(() => log_and_popup("URL copied to clipboard"))
+        .catch(err => log_and_popup("Failed to copy URL to clipboard: " + err, "error"));
+    }
+
+    shareButton.addEventListener("click", shareUrl);
+    copyButton.addEventListener("click", copyUrlToClipboard);
+  document.getElementById("checkAudio").addEventListener("click", () => {
+    const supportsAudioRecording = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    if (supportsAudioRecording) {
+      log_and_popup("Audio recording is supported.");
+    } else {
+      log_and_popup("Audio recording not supported.");
+    }
+  });
+
+  document.getElementById("checkPWA").addEventListener("click", () => {
+    const supportsPWA = ('serviceWorker' in navigator) && ('onbeforeinstallprompt' in window);
+    if (supportsPWA) {
+      log_and_popup("PWA features supported.");
+    } else {
+      log_and_popup("PWA features not supported.");
+    }
+  });
+  document.getElementById("checkAudioPerm").addEventListener("click", async () => {
+    if (!navigator.permissions) {
+      log_and_popup("Permissions API not supported.");
+      return;
+    }
+
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: "microphone" });
+      log_and_popup(`Audio permission state: ${permissionStatus.state}`);
+
+      if (permissionStatus.state !== "granted") {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          log_and_popup("Audio permission granted after requesting.");
+          // Stop tracks immediately since this is just a check
+          stream.getTracks().forEach(track => track.stop());
+        } catch (err) {
+          log_and_popup("Audio permission request denied or error: " + err.message, "error");
+        }
+      }
+    } catch (err) {
+      log_and_popup("Error checking audio permission: " + err.message, "error");
+    }
+  });
+  const registerBtn = document.getElementById('registerSWBtn');
+  const notifyBtn = document.getElementById('notifyBtn');
+
+  registerBtn.addEventListener('click', () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        log_and_popup('Service Worker registered.');
+	setTimeout(() => {
+          window.location.reload();
+	}, 1000);
+      }).catch(err => {
+        log_and_popup('Service Worker registration failed: ' + err.message);
+      });
+    } else {
+      log_and_popup('Service Workers not supported.');
+    }
+  });
+
+  notifyBtn.addEventListener('click', () => {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
+      log_and_popup('Notification message sent to Service Worker.');
+    } else {
+      log_and_popup('No active Service Worker controller.');
+    }
+  });
+  const requestPermissionBtn = document.getElementById('requestPermissionBtn');
+
+  requestPermissionBtn.addEventListener('click', () => {
+    if (!('Notification' in window)) {
+      log_and_popup('This browser does not support notifications.');
+      return;
+    }
+
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        log_and_popup('Notification permission granted.');
+      } else if (permission === 'denied') {
+        log_and_popup('Notification permission denied.');
+      } else {
+        log_and_popup('Notification permission dismissed.');
+      }
+    }).catch(err => {
+      log_and_popup('Notification permission request error: ' + err.message);
+    });
+  });
+
+    function sendRequest(path) {
+      fetch('/captive-portal/api/' + path)
+        .then(response => {
+          if (!response.ok) throw new Error('Request failed');
+          return response.text();
+        })
+        .then(data => {
+          log_and_popup('Request succeeded');
+        })
+        .catch(err => {
+          log_and_popup('Notification permission request error: ' + err.message);
+        });
+    }
+  </script>
+
+</body>
+</html>
