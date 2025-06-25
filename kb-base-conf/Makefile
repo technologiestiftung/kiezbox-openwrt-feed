@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-base-conf
 PKG_VERSION:=1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -41,6 +41,8 @@ endef
 define Package/kb-base-conf/install
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_DATA) ./files/70_kb_system $(1)/etc/uci-defaults
+	$(INSTALL_DIR) $(1)/opt/
+	cp -r ./files/opt/* $(1)/opt
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done

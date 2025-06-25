@@ -13,6 +13,7 @@ kb_init_config() {
 		set kb.main.box_id='$(uci get kboxes.default.box_id)'
 		set kb.main.box_name='$(uci get kboxes.default.box_name)'
 	EOF
+	#TODO: add default lon/lat setup
 	[ "$(uci get kb.main.state)" = "u" ] && {
 		[ -n "$(uci -q get kboxes.${board_uid})" ] && {
 			uci -q batch <<-EOF
@@ -20,6 +21,8 @@ kb_init_config() {
 				set kb.main.dist_id='$(uci get kboxes.${board_uid}.dist_id)'
 				set kb.main.box_id='$(uci get kboxes.${board_uid}.box_id)'
 				set kb.main.box_name='$(uci get kboxes.${board_uid}.box_name)'
+				set kb.main.geo_lon='$(uci get kboxes.${board_uid}.geo_lon)'
+				set kb.main.geo_lat='$(uci get kboxes.${board_uid}.geo_lat)'
 				set kb.main.trunk_base='$(uci get kboxes.${board_uid}.trunk_base)'
 				set kb.main.trunk_pw='$(uci get kboxes.${board_uid}.trunk_pw)'
 				set kb.main.trunk_domain='$(uci get kboxes.${board_uid}.trunk_domain)'
@@ -212,6 +215,18 @@ kb_config_network() {
 			set network.mesh_client.defaultroute='0'
 		EOF
 	}
+	## setup mesh captive Interface (used for secondary dns only)
+	local box_ip_captive="10.251.0.1"
+	[ -z "$(uci -q get network.mesh_captive)" ] && {
+		uci -q batch <<-EOF
+			set network.mesh_captive='interface'
+			set network.mesh_captive.proto='static'
+			set network.mesh_captive.device='br-client'
+			set network.mesh_captive.ipaddr='${box_ip_captive}'
+			set network.mesh_captive.netmask='255.255.0.0'
+			set network.mesh_captive.defaultroute='0'
+		EOF
+	}
 	## Setup mesh client dhcp
 	local proj_domain="$(uci -q get kbproj.main.domain)"
 	#TODO: update arbitrary client limit of 1000 to something realisitc. check for performance impact of high number of leases
@@ -223,7 +238,7 @@ kb_config_network() {
 			set dhcp.mesh_client.limit='1000'
 			set dhcp.mesh_client.leasetime='12h'
 			set dhcp.mesh_client.netmask='255.255.0.0'
-			set dhcp.mesh_client.dhcp_option='114,https://${proj_domain}/captive-portal/api.json'
+			set dhcp.mesh_client.dhcp_option='114,https://${proj_domain}/captive-portal/api/status'
 		EOF
 	}
 
@@ -231,14 +246,17 @@ kb_config_network() {
 	## Setup mesh interface
 	## TODO: We currently assume radio0 is on the 2g band. improve this to find the 2g radio and mesh there
 	local proj_ssid="$(uci -q get kbproj.main.ssid)"
+	local mesh_ssid="$(uci -q get kbproj.main.mesh_ssid)"
+	local mesh_chan_2_4="$(uci -q get kbproj.main.mesh_chan_2_4)"
 	local proj_psk="$(uci -q get kbproj.main.psk)"
 	[ -n "$(uci -q get wireless.radio0)" -a "$(uci -q get wireless.radio0.band)" = "2g" ] && {
 		uci -q batch <<-EOF
+			set wireless.radio0.channel='${mesh_chan_2_4}'
 			set wireless.kbmesh0=wifi-iface
 			set wireless.kbmesh0.device='radio0'
 			set wireless.kbmesh0.mode='mesh'
 			set wireless.kbmesh0.encryption='sae'
-			set wireless.kbmesh0.mesh_id='${proj_ssid}_mesh'
+			set wireless.kbmesh0.mesh_id='${mesh_ssid}'
 			set wireless.kbmesh0.mesh_fwding='0'
 			set wireless.kbmesh0.mesh_rssi_threshold='0'
 			set wireless.kbmesh0.key='${proj_psk}'
@@ -315,7 +333,7 @@ kb_config_network() {
 			add_list firewall.${zone}.network='mesh_dist'
 		EOF
 	}
-	## Mesh district zone
+	## Mesh client zone
 	[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_client" ] && {
 		#TODO: improve check for firewall zone. see bridge
 		#TODO: set up client wifi firewall more permissive
@@ -326,6 +344,15 @@ kb_config_network() {
 			set firewall.${zone}.output='ACCEPT'
 			set firewall.${zone}.forward='REJECT'
 			add_list firewall.${zone}.network='mesh_client'
+			add_list firewall.${zone}.network='mesh_captive'
+		EOF
+		# add include for custom captive portal rules
+		#TODO: seperate this from main/client config?
+		include=$(uci add firewall include)
+		uci -q batch <<-EOF
+			set firewall.${include}.type='nftables'
+			set firewall.${include}.path='/opt/kb-script/portal_rules.nft'
+			set firewall.${include}.position='table-post'
 		EOF
 	}
 	### Mesh client forwarding to backhaul
@@ -342,21 +369,38 @@ kb_config_network() {
 			set firewall.${forwarding}.dest='wan'
 		EOF
 	}
-	### Setup host/DNS entries for captive portal forwarding
-	[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_ssid}" ] && {
+	### Setup host entries for local app/portal serving
+	[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_domain}" ] && {
 		#TODO: improve check for domain entry. see bridge
+		domain=$(uci add dhcp domain)
+		uci -q batch <<-EOF
+			set dhcp.${domain}.name='${proj_domain}'
+			set dhcp.${domain}.ip='${box_ip_client}'
+		EOF
+	}
+	### Setup DNS entries for captive portal forwarding
+	[ -z "$(uci -q get dhcp.captive)" ] && {
+		#TODO: some important dnsmasq options dont seem to be supported by uci.
+		# confdir is used as workaround. we should port the features to dnsmasq uci.
+		uci -q batch <<-EOF
+			rename dhcp.@dnsmasq[0]=client
+			set dhcp.client=dnsmasq
+			add_list dhcp.client.address='/${proj_domain}/${box_ip_client}'
+			set dhcp.client.local='/lan/${proj_domain}/'
+			set dhcp.client.confdir='/opt/kb-config/dnsmasq.client/'
+			add_list dhcp.client.interface='lan'
+		EOF
 		## list of portal domains was partially taken from https://captivebehavior.wballiance.com/ , some other place i forgot about and our own tests
 		#TODO: add FireOS
 		#TODO: check with different devices
 		#TODO: change this longterm to allow internet access after initial information/page
-		local portal_domains="www.apple.com www.appleiphonecell.com captive.apple.com www.airport.us www.ibook.info www.itools.info www.thinkdifferent.us apple.com clients3.google.com clients4.google.com android.clients.google.com connectivitycheck.android.com connectivitycheck.gstatic.com www.gstatic.com www.google.com www.androidbak.net detectportal.firefox.com d2uzsrnmmf6tds.cloudfront.net msftncsi.com connectivitycheck.grapheneos.network connectivitycheck.platform.hicloud.com ${proj_domain} ${proj_ssid}"
-		for portal_domain in ${portal_domains}; do
-			domain=$(uci add dhcp domain)
-			uci -q batch <<-EOF
-				set dhcp.${domain}.name='${portal_domain}'
-				set dhcp.${domain}.ip='${box_ip_client}'
-			EOF
-		done
+		local portal_domains="/www.apple.com/www.appleiphonecell.com/captive.apple.com/www.airport.us/www.ibook.info/www.itools.info/www.thinkdifferent.us/apple.com/clients3.google.com/clients4.google.com/android.clients.google.com/connectivitycheck.android.com/connectivitycheck.gstatic.com/www.gstatic.com/www.google.com/www.androidbak.net/detectportal.firefox.com/d2uzsrnmmf6tds.cloudfront.net/msftncsi.com/connectivitycheck.grapheneos.network/connectivitycheck.platform.hicloud.com/${proj_domain}/"
+		uci -q batch <<-EOF
+			set dhcp.captive=dnsmasq
+			add_list dhcp.captive.address='${portal_domains}${box_ip_client}'
+			set dhcp.captive.local='${portal_domains}'
+			set dhcp.captive.confdir='/opt/kb-config/dnsmasq.captive/'
+		EOF
 	}
 	### miscellaneous changes and fixes
 	### - use rather obscure subnet on lan to reduce collisions with wan/dhcp
