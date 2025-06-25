@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kiezbox Admin</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 600px; }
+    form { margin-bottom: 2em; padding: 1em; border: 1px solid #ccc; border-radius: 6px; }
+    label { display: block; margin-top: 1em; }
+    button { margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <h1>Kiezbox Control Panel</h1>
+
+  <!-- Form to set mode -->
+  <form method="post" action="/api/admin/control">
+    <h2>Set Mode</h2>
+    <input type="hidden" name="key" value="mode">
+
+    <label for="modeValue">Select mode:</label>
+    <select id="modeValue" name="value" required>
+      <option value="emergency">Emergency</option>
+      <option value="normal">Normal</option>
+      <option value="maintenance">Maintenance</option>
+    </select>
+
+    <button type="submit">Set Mode</button>
+  </form>
+
+  <!-- Form to set unix_time -->
+  <form method="post" action="/api/admin/control">
+    <h2>Set Unix Time</h2>
+    <input type="hidden" name="key" value="unix_time">
+
+    <label for="unixTimeValue">Unix timestamp:</label>
+    <input type="number" id="unixTimeValue" name="value" required>
+
+    <button type="submit">Set Unix Time</button>
+  </form>
+</body>
+</html>
