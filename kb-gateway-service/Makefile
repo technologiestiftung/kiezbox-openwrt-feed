@@ -2,16 +2,18 @@
 
 include $(TOPDIR)/rules.mk
 
+GIT_COMMIT_DATE:=$(shell git log -n 1 --pretty=%ad --date=short . )
+GIT_COMMIT_TSTAMP:=$(shell git log -n 1 --pretty=%at . )
+
 # Name, version and release number
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-gateway-service
-PKG_VERSION:=1.1
-PKG_RELEASE:=3
+PKG_VERSION=$(GIT_COMMIT_DATE)-$(GIT_COMMIT_TSTAMP)
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=880038f2f12759507a2d2f9056323506cfeb1165
-PKG_MIRROR_HASH:=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+PKG_SOURCE_VERSION:=507a029d7f429611cdba8e9ece17c39155d1c184
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
