@@ -15,11 +15,11 @@ set redir {
 chain portal_dstnat {
     type nat hook prerouting priority dstnat; policy accept;
     # captive client http(s) requests are forced to our captive portal
-    ip saddr != @freed tcp dport {80,443} dnat to 10.252.0.1
+    iifname "br-client" ip saddr != @freed tcp dport {80,443} dnat to 10.252.0.1
     # captive client dns requests are forced to the secondary dns, which resolves common portal urls to point to us
-    ip saddr != @freed udp dport {53} dnat to 10.251.0.1
+    iifname "br-client" ip saddr != @freed udp dport {53} dnat to 10.251.0.1
     # freed clients should use the main dns server now (and be forced to use it)
-    ip saddr @freed udp dport {53} dnat to 10.252.0.1
+    iifname "br-client" ip saddr @freed udp dport {53} dnat to 10.252.0.1
     # workaround to make captive portal work after freeing clients who use DoH/DoT.
-    ip daddr @redir dnat to 10.252.0.1
+    iifname "br-client" ip daddr @redir dnat to 10.252.0.1
 }
