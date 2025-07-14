@@ -9,11 +9,11 @@ GIT_COMMIT_TSTAMP:=$(shell git log -n 1 --pretty=%at . )
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-gateway-service
 PKG_VERSION=$(GIT_COMMIT_DATE)-$(GIT_COMMIT_TSTAMP)
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=507a029d7f429611cdba8e9ece17c39155d1c184
+PKG_SOURCE_VERSION:=85d9e86643db3845be3f29a7d2a4cd9fadacb013
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
