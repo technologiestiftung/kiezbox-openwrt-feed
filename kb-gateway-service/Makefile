@@ -13,7 +13,7 @@ PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=85d9e86643db3845be3f29a7d2a4cd9fadacb013
+PKG_SOURCE_VERSION:=0fff63c9535de727914adf0794fe59137e28da13
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
