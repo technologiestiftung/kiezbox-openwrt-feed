@@ -13,14 +13,14 @@ PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/technologiestiftung/kiezbox-gateway-service.git
-PKG_SOURCE_VERSION:=f0b7c7c52a76c3c7b8ce49a6fe1ea4fc24f284a3
+PKG_SOURCE_VERSION:=468c07929aa2674f793182e580a9f2411fc96f22
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=kiezbox
-GO_PKG_BUILD_PKG:=kiezbox/cmd
+GO_PKG_BUILD_PKG:=kiezbox/kb-gateway
 
 include $(INCLUDE_DIR)/package.mk
 include ../../packages/lang/golang/golang-package.mk
