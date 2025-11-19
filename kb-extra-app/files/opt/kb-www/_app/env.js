@@ -1,0 +1,1 @@
+export const env={"PUBLIC_KB_TARGET_URI":"sip:11@kb-t-71-01","PUBLIC_LOG_LEVEL":"error","PUBLIC_API_URL":"https://kiezbox.ts.berlin","PUBLIC_APP_HOSTNAME":"kiezbox.ts.berlin","PUBLIC_KB_DEMO_TARGET_URI":"sip:*66@kb-t-71-01","PUBLIC_USER_PREFIX":"user","PUBLIC_WSS_PATH":"/ws"}
