@@ -262,6 +262,7 @@ kb_config_network() {
 			set wireless.kbmesh0.key='${proj_psk}'
 			set wireless.kbmesh0.network='batmesh'
 			set wireless.kbmesh0.ifname='m-11s-0'
+			set wireless.kbmesh0.macaddr='42:02:6b:75:${dist_id}:${box_id}'
 			set wireless.kbapmgmt0=wifi-iface
 			set wireless.kbapmgmt0.device='radio0'
 			set wireless.kbapmgmt0.mode='ap'
