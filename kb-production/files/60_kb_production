@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# default hostname, 70_kb_system of kb-base-conf may set a box specific one
+uci set system.@system[0].hostname='kiezbox'
+uci commit system
