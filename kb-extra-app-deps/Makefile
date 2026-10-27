@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-extra-app-deps
 PKG_VERSION:=1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -15,6 +15,7 @@ define Package/kb-extra-app-deps
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=(DEPRECATED) Kiezbox extra packages for messages app
+  CONFLICTS:=kb-extra-app
   DEPENDS:= \
 	+python3 \
 	+python3-venv \
