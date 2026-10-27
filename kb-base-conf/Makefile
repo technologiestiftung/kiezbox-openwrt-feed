@@ -15,7 +15,12 @@ define Package/kb-base-conf
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox basefiles and setup scripts
-  DEPENDS:=+kmod-batman-adv +batctl-full +ip-bridge +shadow-utils +shadow-usermod
+  DEPENDS:= \
+	+kmod-batman-adv \
+	+batctl-full \
+	+ip-bridge \
+	+shadow-utils \
+	+shadow-usermod
   PKGARCH:=all
 endef
 

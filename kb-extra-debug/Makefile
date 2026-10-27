@@ -15,7 +15,18 @@ define Package/kb-extra-debug
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox extra tools for debugging
-  DEPENDS:=+batctl-full +iperf3 +iputils-ping +iputils-tracepath +nload +openssh-sftp-server +tcpdump +tmux +luci +luci-ssl +luci-proto-batman-adv
+  DEPENDS:= \
+	+batctl-full \
+	+iperf3 \
+	+iputils-ping \
+	+iputils-tracepath \
+	+nload \
+	+openssh-sftp-server \
+	+tcpdump \
+	+tmux \
+	+luci \
+	+luci-ssl \
+	+luci-proto-batman-adv
   PKGARCH:=all
 endef
 

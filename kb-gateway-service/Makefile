@@ -30,7 +30,9 @@ define Package/kb-gateway-service
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox gateway service
-  DEPENDS:=$(GO_ARCH_DEPENDS) +kmod-usb-serial-cp210x
+  DEPENDS:= \
+	$(GO_ARCH_DEPENDS) \
+	+kmod-usb-serial-cp210x
 endef
 
 # Package description; a more verbose description on what our package does

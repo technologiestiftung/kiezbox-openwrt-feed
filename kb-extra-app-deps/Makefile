@@ -15,7 +15,12 @@ define Package/kb-extra-app-deps
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=(DEPRECATED) Kiezbox extra packages for messages app
-  DEPENDS:=+python3 +python3-venv +python3-pip +git +git-http
+  DEPENDS:= \
+	+python3 \
+	+python3-venv \
+	+python3-pip \
+	+git \
+	+git-http
   PKGARCH:=all
 endef
 

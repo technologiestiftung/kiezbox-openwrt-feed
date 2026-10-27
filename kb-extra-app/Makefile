@@ -12,7 +12,23 @@ define Package/kb-extra-app
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=Kiezbox emergency app package and dependencies
-  DEPENDS:=+lighttpd +@LIGHTTPD_SSL +@LIGHTTPD_CRYPTOLIB_OPENSSL +lighttpd-mod-access +lighttpd-mod-accesslog +lighttpd-mod-auth +lighttpd-mod-authn_file +lighttpd-mod-alias +lighttpd-mod-cgi +lighttpd-mod-expire +lighttpd-mod-openssl +lighttpd-mod-proxy +lighttpd-mod-redirect +lighttpd-mod-rewrite +opendoas +bind-dig
+  DEPENDS:= \
+	+lighttpd \
+	+@LIGHTTPD_SSL \
+	+@LIGHTTPD_CRYPTOLIB_OPENSSL \
+	+lighttpd-mod-access \
+	+lighttpd-mod-accesslog \
+	+lighttpd-mod-auth \
+	+lighttpd-mod-authn_file \
+	+lighttpd-mod-alias \
+	+lighttpd-mod-cgi \
+	+lighttpd-mod-expire \
+	+lighttpd-mod-openssl \
+	+lighttpd-mod-proxy \
+	+lighttpd-mod-redirect \
+	+lighttpd-mod-rewrite \
+	+opendoas \
+	+bind-dig
   PKGARCH:=all
 endef
 
