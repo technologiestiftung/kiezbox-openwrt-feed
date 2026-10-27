@@ -2,13 +2,13 @@
 
 include $(TOPDIR)/rules.mk
 
-GIT_COMMIT_DATE:=$(shell git log -n 1 --pretty=%ad --date=short . )
+GIT_COMMIT_DATE:=$(shell git log -n 1 --pretty=%ad --date=format:%Y.%m.%d . )
 GIT_COMMIT_TSTAMP:=$(shell git log -n 1 --pretty=%at . )
 
 # Name, version and release number
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-gateway-service
-PKG_VERSION=$(GIT_COMMIT_DATE)-$(GIT_COMMIT_TSTAMP)
+PKG_VERSION=$(GIT_COMMIT_DATE).$(GIT_COMMIT_TSTAMP)
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
