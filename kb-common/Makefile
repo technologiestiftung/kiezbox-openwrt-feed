@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=kb-common
 PKG_VERSION:=1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_LICENSE:=GPL-2.0-only
 
@@ -12,7 +12,9 @@ define Package/kb-common
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox files for the production and the rescue image
-  DEPENDS:=+uboot-envtools
+  DEPENDS:= \
+	+tsb-espflash \
+	+uboot-envtools
   PKGARCH:=all
 endef
 
