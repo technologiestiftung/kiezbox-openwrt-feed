@@ -67,7 +67,6 @@ define Package/kb-extra-phone
 	+asterisk-bridge-native-rtp \
 	+asterisk-bridge-simple \
 	+asterisk-bridge-softmix \
-	+asterisk-chan-alsa \
 	+asterisk-chan-audiosocket \
 	+asterisk-chan-bridge-media \
 	+asterisk-chan-console \
@@ -199,7 +198,6 @@ define Package/kb-extra-phone
 	+asterisk-res-limit \
 	+asterisk-res-manager-devicestate \
 	+asterisk-res-manager-presencestate \
-	+asterisk-res-monitor \
 	+asterisk-res-musiconhold \
 	+asterisk-res-mutestream \
 	+asterisk-res-mwi-devstate \
