@@ -1,0 +1,38 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Boot the rescue system once: U-Boot runs bootcmd_recovery_once on the next
+# boot, which restores the default bootcmd, deletes itself and boots the
+# recovery volume. The boot after that is a normal one again.
+
+usage() {
+	cat <<-USAGE
+		Usage: $0 [-n]
+
+		Boot the rescue system once on the next boot.
+
+		  -n  only prepare the next boot, do not reboot now
+	USAGE
+}
+
+reboot_now=1
+case "$1" in
+"") ;;
+-n) reboot_now= ;;
+-h) usage; exit 0 ;;
+*) usage >&2; exit 1 ;;
+esac
+
+fw_printenv -n boot_recovery >/dev/null 2>&1 || {
+	echo "U-Boot environment not accessible or without boot_recovery" >&2
+	exit 1
+}
+
+fw_setenv bootcmd_recovery_once 'env default bootcmd ; setenv bootcmd_recovery_once ; saveenv ; saveenv ; run boot_recovery' &&
+	fw_setenv bootcmd 'run bootcmd_recovery_once' || {
+	echo "failed to update the U-Boot environment" >&2
+	exit 1
+}
+
+echo "The next boot will start the rescue system."
+[ -z "$reboot_now" ] || reboot
