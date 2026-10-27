@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-extra-phone
 PKG_VERSION:=1.0
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -251,8 +251,8 @@ define Build/Compile
 endef
 
 define Package/kb-extra-phone/install
-	$(INSTALL_DIR) $(1)/etc/asterisk
-	$(INSTALL_DATA) ./files/etc/asterisk/*.conf $(1)/etc/asterisk/
+	$(INSTALL_DIR) $(1)/opt/kb-config/asterisk
+	$(INSTALL_DATA) ./files/etc/asterisk/*.conf $(1)/opt/kb-config/asterisk/
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/etc/uci-defaults/71_kb_phone $(1)/etc/uci-defaults
 	$(INSTALL_DIR) $(1)/opt/kb-script

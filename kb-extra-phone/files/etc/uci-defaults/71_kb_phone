@@ -2,6 +2,13 @@
 
 . /lib/functions.sh
 
+### Install the KiezBox asterisk configuration, it can't be shipped in
+### /etc/asterisk directly as these files belong to the asterisk packages.
+### Only on a fresh install: after a sysupgrade with kept settings, the
+### restored configuration is still in /sysupgrade.tgz until the boot is
+### done, and it contains the installed asterisk configs.
+[ -f /sysupgrade.tgz ] || cp /opt/kb-config/asterisk/*.conf /etc/asterisk/
+
 ### Enable asterisk
 uci -q batch <<-EOF
 	set asterisk.general.enabled='1'
