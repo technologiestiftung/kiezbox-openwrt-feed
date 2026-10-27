@@ -1,0 +1,68 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Flash the Meshtastic firmware to the ESP32-S3 of the KiezBox. otadata is
+# erased, so the ESP32 bootloader boots the app partition at 0x10000 even
+# if a Meshtastic OTA update selected another slot before. nvs and the
+# filesystem with the Meshtastic settings are kept, unless -b writes a
+# partition table with a different layout.
+
+FW_DIR=/usr/share/kb-fw/meshtastic
+OTADATA_ADDR=0xe000
+OTADATA_SIZE=0x2000
+
+usage() {
+	cat <<-USAGE
+		Usage: $0 [-b] [-p <port>]
+
+		Flash the Meshtastic firmware to the ESP32-S3.
+
+		  -b         also flash the bootloader and the partition table
+		             WARNING: if the partition layout changed, the
+		             Meshtastic settings and nvs are lost
+		  -p <port>  serial port of the ESP32-S3 (default: $port)
+	USAGE
+}
+
+port=/dev/ttyUSB0
+bootloader=
+while getopts "bp:h" opt; do
+	case "$opt" in
+	b) bootloader=1 ;;
+	p) port="$OPTARG" ;;
+	h) usage; exit 0 ;;
+	*) usage >&2; exit 1 ;;
+	esac
+done
+
+[ -c "$port" ] || {
+	echo "serial port $port not found" >&2
+	exit 1
+}
+
+for f in ${bootloader:+bootloader.bin partitions.bin} firmware.bin; do
+	[ -f "$FW_DIR/$f" ] || {
+		echo "$FW_DIR/$f not found" >&2
+		exit 1
+	}
+done
+
+# espflash <command> [<after reset>] <args>...
+esp() {
+	cmd="$1"
+	after="$2"
+	shift 2
+	espflash "$cmd" -c esp32s3 -p "$port" --non-interactive -a "$after" "$@" || {
+		echo "espflash $cmd failed" >&2
+		exit 1
+	}
+}
+
+if [ -n "$bootloader" ]; then
+	esp write-bin no-reset 0x0 "$FW_DIR/bootloader.bin"
+	esp write-bin no-reset 0x8000 "$FW_DIR/partitions.bin"
+fi
+esp erase-region no-reset "$OTADATA_ADDR" "$OTADATA_SIZE"
+esp write-bin hard-reset 0x10000 "$FW_DIR/firmware.bin"
+
+echo "Meshtastic firmware flashed."
