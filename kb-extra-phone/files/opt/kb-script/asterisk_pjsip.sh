@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
 
 trunk_domain=$(uci get kb.main.trunk_domain)
 trunk_base=$(uci get kb.main.trunk_base)

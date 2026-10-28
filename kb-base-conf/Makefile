@@ -6,7 +6,9 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-base-conf
 PKG_VERSION:=1.0
-PKG_RELEASE:=6
+PKG_RELEASE:=7
+
+PKG_LICENSE:=GPL-2.0-only
 
 include $(INCLUDE_DIR)/package.mk
 

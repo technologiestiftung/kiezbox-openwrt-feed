@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
 
 domain=$(uci get kbproj.main.domain)
 

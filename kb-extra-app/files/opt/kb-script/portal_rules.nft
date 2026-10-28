@@ -1,4 +1,5 @@
 #!/usr/sbin/nft -f
+# SPDX-License-Identifier: GPL-2.0-only
 
 # set for all the clients in the captive subnet, which should be freed
 set freed {

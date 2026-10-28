@@ -7,6 +7,8 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=kb-keyring-dev
 PKG_RELEASE:=1
 
+PKG_LICENSE:=GPL-2.0-only
+
 include $(INCLUDE_DIR)/package.mk
 
 # Package definition; instructs on how and where our package will appear in the overall configuration menu ('make menuconfig')
