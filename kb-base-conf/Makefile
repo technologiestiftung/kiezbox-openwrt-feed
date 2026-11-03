@@ -12,26 +12,38 @@ PKG_LICENSE:=GPL-2.0-only
 
 include $(INCLUDE_DIR)/package.mk
 
-# Package definition; instructs on how and where our package will appear in the overall configuration menu ('make menuconfig')
-define Package/kb-base-conf
+define Package/kb-base-conf/default
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
-  TITLE:=KiezBox basefiles and setup scripts
+  PKGARCH:=all
+endef
+
+define Package/kb-base-conf-tiny
+$(call Package/kb-base-conf/default)
+  TITLE:=KiezBox base setup scripts (mesh only)
   DEPENDS:= \
 	+kmod-batman-adv \
 	+batctl-full \
 	+ip-bridge \
 	+shadow-utils \
 	+shadow-usermod
-  PKGARCH:=all
 endef
 
-# Package description; a more verbose description on what our package does
+define Package/kb-base-conf
+$(call Package/kb-base-conf/default)
+  TITLE:=KiezBox basefiles and setup scripts
+  DEPENDS:=+kb-base-conf-tiny
+endef
+
+define Package/kb-base-conf-tiny/description
+	Contains the project independent setup of the KiezBox mesh network.
+endef
+
 define Package/kb-base-conf/description
 	Contains project independend setup and configuration files for the KiezBox initialization.
 endef
 
-define Package/kb-base-conf/conffiles
+define Package/kb-base-conf-tiny/conffiles
 /etc/config/kb
 /etc/config/kbproj
 /etc/config/kboxes
@@ -44,13 +56,23 @@ endef
 define Build/Compile
 endef
 
-# Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
+define Package/kb-base-conf-tiny/install
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_00_init $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_10_rootpw $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_20_lan $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_20_mesh $(1)/etc/uci-defaults
+endef
+
 define Package/kb-base-conf/install
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_* $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_10_hostname $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_30_captive $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_30_client $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_50_uhttpd $(1)/etc/uci-defaults
 	$(INSTALL_DIR) $(1)/opt/
 	cp -r ./files/opt/* $(1)/opt
 endef
 
-# This command is always the last, it uses the definitions and variables we give above in order to get the job done
+$(eval $(call BuildPackage,kb-base-conf-tiny))
 $(eval $(call BuildPackage,kb-base-conf))
