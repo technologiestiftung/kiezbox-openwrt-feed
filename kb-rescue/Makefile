@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=kb-rescue
 PKG_VERSION:=1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_LICENSE:=GPL-2.0-only
 
@@ -12,7 +12,9 @@ define Package/kb-rescue
   SECTION:=kiezbox
   CATEGORY:=Kiezbox
   TITLE:=KiezBox rescue image
-  DEPENDS:=+kb-common
+  DEPENDS:= \
+	+kb-common \
+	+kb-base-conf-recovery
   PKGARCH:=all
 endef
 
