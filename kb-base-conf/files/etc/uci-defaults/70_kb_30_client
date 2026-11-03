@@ -41,6 +41,7 @@ proj_domain="$(uci -q get kbproj.main.domain)"
 	uci -q batch <<-EOF
 		set dhcp.mesh_client=dhcp
 		set dhcp.mesh_client.interface='mesh_client'
+		set dhcp.mesh_client.instance='client'
 		set dhcp.mesh_client.start='10'
 		set dhcp.mesh_client.limit='1000'
 		set dhcp.mesh_client.leasetime='12h'

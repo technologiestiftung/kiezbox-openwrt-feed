@@ -50,13 +50,11 @@ box_ip_captive="10.251.0.1"
 		set dhcp.captive.local='${portal_domains}'
 		add_list dhcp.captive.listen_address='${box_ip_captive}'
 	EOF
-	## no dhcp from the captive instance on br-client
-	uci -q batch <<-EOF
-		set dhcp.mesh_captive=dhcp
-		set dhcp.mesh_captive.interface='mesh_captive'
-		set dhcp.mesh_captive.ignore='1'
-		set dhcp.mesh_captive.instance='captive'
-	EOF
+	## only the client instance serves dhcp, the captive instance is used for dns only
+	## dhcp.mesh_client is assigned to the client instance in 70_kb_30_client
+	for dhcp in lan wan; do
+		[ -n "$(uci -q get dhcp.${dhcp})" ] && uci set dhcp.${dhcp}.instance='client'
+	done
 }
 
 uci commit
