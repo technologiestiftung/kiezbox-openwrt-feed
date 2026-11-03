@@ -46,7 +46,7 @@ proj_domain="$(uci -q get kbproj.main.domain)"
 		set dhcp.mesh_client.limit='1000'
 		set dhcp.mesh_client.leasetime='12h'
 		set dhcp.mesh_client.netmask='255.255.0.0'
-		set dhcp.mesh_client.dhcp_option='114,https://${proj_domain}/captive-portal/api/status'
+		add_list dhcp.mesh_client.dhcp_option='114,https://${proj_domain}/captive-portal/api/status'
 	EOF
 }
 
