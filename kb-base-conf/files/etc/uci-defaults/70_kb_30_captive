@@ -21,7 +21,7 @@ box_ip_captive="10.251.0.1"
 }
 
 ### Setup host entries for local app/portal serving
-[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_domain}" ] && {
+[ "$(uci -q get dhcp.@domain[-1].name)" != "${proj_domain}" ] && {
 	#TODO: improve check for domain entry. see bridge
 	domain=$(uci add dhcp domain)
 	uci -q batch <<-EOF
