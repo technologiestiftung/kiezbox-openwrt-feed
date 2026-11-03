@@ -1,0 +1,26 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+# Setup wireless interfaces
+## Setup recovery access point, bridged into the default lan
+## TODO: We currently assume radio0 is on the 2g band. improve this to find the 2g radio and mesh there
+[ -n "$(uci -q get wireless.radio0)" -a "$(uci -q get wireless.radio0.band)" = "2g" ] && {
+	uci -q batch <<-EOF
+		set wireless.kbaprecovery0=wifi-iface
+		set wireless.kbaprecovery0.device='radio0'
+		set wireless.kbaprecovery0.mode='ap'
+		set wireless.kbaprecovery0.ssid='kiezbox-rescue'
+		set wireless.kbaprecovery0.encryption='psk2'
+		set wireless.kbaprecovery0.key='kiezbox123'
+		set wireless.kbaprecovery0.network='lan'
+		set wireless.kbaprecovery0.macaddr='random'
+	EOF
+	# Enable wireless radio
+	uci set wireless.radio0.disabled=''
+}
+
+uci commit
+exit 0

@@ -35,12 +35,24 @@ $(call Package/kb-base-conf/default)
   DEPENDS:=+kb-base-conf-tiny
 endef
 
+define Package/kb-base-conf-recovery
+$(call Package/kb-base-conf/default)
+  TITLE:=KiezBox setup scripts for the rescue image
+  DEPENDS:=+kb-base-conf-tiny
+  CONFLICTS:=kb-base-conf
+endef
+
 define Package/kb-base-conf-tiny/description
 	Contains the project independent setup of the KiezBox mesh network.
 endef
 
 define Package/kb-base-conf/description
 	Contains project independend setup and configuration files for the KiezBox initialization.
+endef
+
+define Package/kb-base-conf-recovery/description
+	Contains the setup of the KiezBox mesh network and a recovery access
+	point, which is bridged into the lan.
 endef
 
 define Package/kb-base-conf-tiny/conffiles
@@ -74,5 +86,11 @@ define Package/kb-base-conf/install
 	cp -r ./files/opt/* $(1)/opt
 endef
 
+define Package/kb-base-conf-recovery/install
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_40_recovery $(1)/etc/uci-defaults
+endef
+
 $(eval $(call BuildPackage,kb-base-conf-tiny))
 $(eval $(call BuildPackage,kb-base-conf))
+$(eval $(call BuildPackage,kb-base-conf-recovery))
