@@ -18,6 +18,11 @@ kb_init_config() {
 		set kb.main.box_name='$(uci get kboxes.default.box_name)'
 	EOF
 	#TODO: add default lon/lat setup
+	# a box entry named placeholder is taken over by the first box without an own entry
+	[ -z "$(uci -q get kboxes.${board_uid})" ] && [ -n "$(uci -q get kboxes.placeholder)" ] && {
+		uci rename kboxes.placeholder="${board_uid}"
+		uci commit kboxes
+	}
 	[ "$(uci get kb.main.state)" = "u" ] && {
 		[ -n "$(uci -q get kboxes.${board_uid})" ] && {
 			uci -q batch <<-EOF
