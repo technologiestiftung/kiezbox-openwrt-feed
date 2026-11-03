@@ -31,15 +31,13 @@ box_ip_captive="10.251.0.1"
 }
 ### Setup DNS entries for captive portal forwarding
 [ -z "$(uci -q get dhcp.captive)" ] && {
-	#TODO: some important dnsmasq options dont seem to be supported by uci.
-	# confdir is used as workaround. we should port the features to dnsmasq uci.
 	uci -q batch <<-EOF
 		rename dhcp.@dnsmasq[0]=client
 		set dhcp.client=dnsmasq
 		add_list dhcp.client.address='/${proj_domain}/${box_ip_client}'
 		set dhcp.client.local='/lan/${proj_domain}/'
-		set dhcp.client.confdir='/opt/kb-config/dnsmasq.client/'
 		add_list dhcp.client.interface='lan'
+		add_list dhcp.client.listen_address='${box_ip_client}'
 	EOF
 	## list of portal domains was partially taken from https://captivebehavior.wballiance.com/ , some other place i forgot about and our own tests
 	#TODO: add FireOS
@@ -50,7 +48,14 @@ box_ip_captive="10.251.0.1"
 		set dhcp.captive=dnsmasq
 		add_list dhcp.captive.address='${portal_domains}${box_ip_client}'
 		set dhcp.captive.local='${portal_domains}'
-		set dhcp.captive.confdir='/opt/kb-config/dnsmasq.captive/'
+		add_list dhcp.captive.listen_address='${box_ip_captive}'
+	EOF
+	## no dhcp from the captive instance on br-client
+	uci -q batch <<-EOF
+		set dhcp.mesh_captive=dhcp
+		set dhcp.mesh_captive.interface='mesh_captive'
+		set dhcp.mesh_captive.ignore='1'
+		set dhcp.mesh_captive.instance='captive'
 	EOF
 }
 

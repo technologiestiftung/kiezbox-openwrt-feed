@@ -82,8 +82,6 @@ define Package/kb-base-conf/install
 	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_30_captive $(1)/etc/uci-defaults
 	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_30_client $(1)/etc/uci-defaults
 	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_50_uhttpd $(1)/etc/uci-defaults
-	$(INSTALL_DIR) $(1)/opt/
-	cp -r ./files/opt/* $(1)/opt
 endef
 
 define Package/kb-base-conf-recovery/install
