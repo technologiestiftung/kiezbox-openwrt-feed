@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# demo project configuration, do not use in production
+
+config proj 'main'
+	option name 'KiezBox Demo'
+	option prefix 'kb'
+	option domain 'kiezbox.ts.berlin'
+	option ssid 'Kiezbox Notfall WLAN'
+	option mesh_ssid 'kiez.box_mesh'
+	option mesh_chan_2_4 '11'
+	option psk 'kiezbox123'
+	option rootpw ''

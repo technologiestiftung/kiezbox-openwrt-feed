@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# demo district configuration, do not use in production
+
+# district id reserved for automatic configuration
+config dist '00'
+	option name 'NoDist'
+
+# district reserved for management network
+config dist 'fe'
+	option name 'ReservedManagement'
+
+# district reserved for backhaul network
+config dist 'fd'
+	option name 'ReservedBackhaul'
+
+# district reserved for client network
+config dist 'fc'
+	option name 'ReservedClient'
+
+# district reserved for captive network
+config dist 'fb'
+	option name 'ReservedCaptive'
+
+# demo district
+config dist 'd0'
+	option name 'DemoDist'

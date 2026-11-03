@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# demo box configuration, do not use in production
+
+# used for all boxes without an own entry
+config box 'default'
+	option state 'u'
+	option dist_id '00'
+	option box_id '00'
+	option box_name 'NoName'
+
+# demo box, taken over by the first box without an own entry: 70_kb_00_init
+# of kb-base-conf renames it to the board uid
+config box 'placeholder'
+	option state 't'
+	option dist_id 'd0'
+	option box_id 'dd'
+	option box_name 'DemoBox'
