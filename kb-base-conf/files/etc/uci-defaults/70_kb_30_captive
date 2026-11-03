@@ -21,12 +21,11 @@ box_ip_captive="10.251.0.1"
 }
 
 ### Setup host entries for local app/portal serving
-[ "$(uci -q get dhcp.@domain[-1].name)" != "${proj_domain}" ] && {
-	#TODO: improve check for domain entry. see bridge
-	domain=$(uci add dhcp domain)
+[ -z "$(uci -q get dhcp.kb_domain)" ] && {
 	uci -q batch <<-EOF
-		set dhcp.${domain}.name='${proj_domain}'
-		set dhcp.${domain}.ip='${box_ip_client}'
+		set dhcp.kb_domain=domain
+		set dhcp.kb_domain.name='${proj_domain}'
+		set dhcp.kb_domain.ip='${box_ip_client}'
 	EOF
 }
 ### Setup DNS entries for captive portal forwarding

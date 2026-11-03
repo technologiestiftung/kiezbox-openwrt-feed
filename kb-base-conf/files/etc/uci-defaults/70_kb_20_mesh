@@ -32,27 +32,25 @@ box_nr="$(printf %d 0x$(uci -q get kb.main.box_id))"
 	EOF
 }
 # setup main mesh bridge interface
-[ "$(uci -q get network.@device[-1].name)" != "br-main" ] && {
-	#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+[ -z "$(uci -q get network.br_main)" ] && {
 	#TODO: use OpenWRT OUI for personal device, as soon as it is available/announced
-	device=$(uci add network device)
 	uci -q batch <<-EOF
-		set network.${device}.type='bridge'
-		set network.${device}.name='br-main'
-		add_list network.${device}.ports='bat0'
-		set network.${device}.bridge_empty='1'
-		set network.${device}.macaddr='22:02:6b:75:${dist_id}:${box_id}'
+		set network.br_main=device
+		set network.br_main.type='bridge'
+		set network.br_main.name='br-main'
+		add_list network.br_main.ports='bat0'
+		set network.br_main.bridge_empty='1'
+		set network.br_main.macaddr='22:02:6b:75:${dist_id}:${box_id}'
 	EOF
 }
 
 # Setup management VLAN
-[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "254" ] && {
-	#TODO: see above
-	bridge_vlan=$(uci add network bridge-vlan)
+[ -z "$(uci -q get network.br_main_254)" ] && {
 	uci -q batch <<-EOF
-		set network.${bridge_vlan}.vlan='254'
-		set network.${bridge_vlan}.device='br-main'
-		add_list network.${bridge_vlan}.ports='bat0:t'
+		set network.br_main_254=bridge-vlan
+		set network.br_main_254.vlan='254'
+		set network.br_main_254.device='br-main'
+		add_list network.br_main_254.ports='bat0:t'
 	EOF
 }
 ## Setup mesh management Interface
@@ -68,13 +66,12 @@ box_nr="$(printf %d 0x$(uci -q get kb.main.box_id))"
 }
 
 # Setup backhaul VLAN
-[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "253" ] && {
-	#TODO: see above
-	bridge_vlan=$(uci add network bridge-vlan)
+[ -z "$(uci -q get network.br_main_253)" ] && {
 	uci -q batch <<-EOF
-		set network.${bridge_vlan}.vlan='253'
-		set network.${bridge_vlan}.device='br-main'
-		add_list network.${bridge_vlan}.ports='bat0:t'
+		set network.br_main_253=bridge-vlan
+		set network.br_main_253.vlan='253'
+		set network.br_main_253.device='br-main'
+		add_list network.br_main_253.ports='bat0:t'
 	EOF
 }
 ## Setup mesh backhaul Interface
@@ -100,13 +97,12 @@ box_nr="$(printf %d 0x$(uci -q get kb.main.box_id))"
 }
 
 # Setup disctict specific VLAN
-[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "${dist_nr}" ] && {
-	#TODO: see above
-	bridge_vlan=$(uci add network bridge-vlan)
+[ -z "$(uci -q get network.br_main_dist)" ] && {
 	uci -q batch <<-EOF
-		set network.${bridge_vlan}.vlan='${dist_nr}'
-		set network.${bridge_vlan}.device='br-main'
-		add_list network.${bridge_vlan}.ports='bat0:t'
+		set network.br_main_dist=bridge-vlan
+		set network.br_main_dist.vlan='${dist_nr}'
+		set network.br_main_dist.device='br-main'
+		add_list network.br_main_dist.ports='bat0:t'
 	EOF
 }
 ## Setup mesh district Interface
@@ -124,49 +120,45 @@ box_ip_dist="10.${dist_nr}.${box_nr}.1"
 
 # Setup Firewall
 ## Mesh management zone
-[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_mgmt" ] && {
-	#TODO: improve check for firewall zone. see bridge
-	zone=$(uci add firewall zone)
+[ -z "$(uci -q get firewall.mesh_mgmt)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${zone}.name='mesh_mgmt'
-		set firewall.${zone}.input='ACCEPT'
-		set firewall.${zone}.output='ACCEPT'
-		set firewall.${zone}.forward='REJECT'
-		add_list firewall.${zone}.network='mesh_mgmt'
+		set firewall.mesh_mgmt=zone
+		set firewall.mesh_mgmt.name='mesh_mgmt'
+		set firewall.mesh_mgmt.input='ACCEPT'
+		set firewall.mesh_mgmt.output='ACCEPT'
+		set firewall.mesh_mgmt.forward='REJECT'
+		add_list firewall.mesh_mgmt.network='mesh_mgmt'
 	EOF
 }
 ## Mesh backhaul zone
-[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_bkhl" ] && {
-	#TODO: improve check for firewall zone. see bridge
-	zone=$(uci add firewall zone)
+[ -z "$(uci -q get firewall.mesh_bkhl)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${zone}.name='mesh_bkhl'
-		set firewall.${zone}.input='ACCEPT'
-		set firewall.${zone}.output='ACCEPT'
-		set firewall.${zone}.forward='ACCEPT'
-		set firewall.${zone}.masq='1'
-		add_list firewall.${zone}.network='mesh_bkhl'
+		set firewall.mesh_bkhl=zone
+		set firewall.mesh_bkhl.name='mesh_bkhl'
+		set firewall.mesh_bkhl.input='ACCEPT'
+		set firewall.mesh_bkhl.output='ACCEPT'
+		set firewall.mesh_bkhl.forward='ACCEPT'
+		set firewall.mesh_bkhl.masq='1'
+		add_list firewall.mesh_bkhl.network='mesh_bkhl'
 	EOF
 }
 ### Mesh backhaul forwarding to wan
-[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_bkhl" ] && {
-	#TODO: improve check for firewall forwarding. see bridge
-	forwarding=$(uci add firewall forwarding)
+[ -z "$(uci -q get firewall.mesh_bkhl_wan)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${forwarding}.src='mesh_bkhl'
-		set firewall.${forwarding}.dest='wan'
+		set firewall.mesh_bkhl_wan=forwarding
+		set firewall.mesh_bkhl_wan.src='mesh_bkhl'
+		set firewall.mesh_bkhl_wan.dest='wan'
 	EOF
 }
 ## Mesh district zone
-[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_dist" ] && {
-	#TODO: improve check for firewall zone. see bridge
-	zone=$(uci add firewall zone)
+[ -z "$(uci -q get firewall.mesh_dist)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${zone}.name='mesh_dist'
-		set firewall.${zone}.input='ACCEPT'
-		set firewall.${zone}.output='ACCEPT'
-		set firewall.${zone}.forward='REJECT'
-		add_list firewall.${zone}.network='mesh_dist'
+		set firewall.mesh_dist=zone
+		set firewall.mesh_dist.name='mesh_dist'
+		set firewall.mesh_dist.input='ACCEPT'
+		set firewall.mesh_dist.output='ACCEPT'
+		set firewall.mesh_dist.forward='REJECT'
+		add_list firewall.mesh_dist.network='mesh_dist'
 	EOF
 }
 

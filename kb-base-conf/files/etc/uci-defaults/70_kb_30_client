@@ -10,17 +10,16 @@ box_ip_client="10.252.0.1"
 proj_domain="$(uci -q get kbproj.main.domain)"
 
 # setup client bridge interface
-[ "$(uci -q get network.@device[-1].name)" != "br-client" ] && {
-	#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+[ -z "$(uci -q get network.br_client)" ] && {
 	#TODO: use OpenWRT OUI for personal device, as soon as it is available/announced
 	#TODO: adding bridge ports here is device specific. work that out later
-	device=$(uci add network device)
 	uci -q batch <<-EOF
-		set network.${device}.type='bridge'
-		set network.${device}.name='br-client'
-		add_list network.${device}.ports='lan4'
-		set network.${device}.bridge_empty='1'
-		set network.${device}.macaddr='32:02:6b:75:${dist_id}:${box_id}'
+		set network.br_client=device
+		set network.br_client.type='bridge'
+		set network.br_client.name='br-client'
+		add_list network.br_client.ports='lan4'
+		set network.br_client.bridge_empty='1'
+		set network.br_client.macaddr='32:02:6b:75:${dist_id}:${box_id}'
 	EOF
 }
 
@@ -54,39 +53,40 @@ proj_domain="$(uci -q get kbproj.main.domain)"
 # INFO: the firewall has to be set up before the client access point,
 # so the access point is never open without it
 ## Mesh client zone
-[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_client" ] && {
-	#TODO: improve check for firewall zone. see bridge
+[ -z "$(uci -q get firewall.mesh_client)" ] && {
 	#TODO: set up client wifi firewall more permissive
-	zone=$(uci add firewall zone)
 	uci -q batch <<-EOF
-		set firewall.${zone}.name='mesh_client'
-		set firewall.${zone}.input='ACCEPT'
-		set firewall.${zone}.output='ACCEPT'
-		set firewall.${zone}.forward='REJECT'
-		add_list firewall.${zone}.network='mesh_client'
-		add_list firewall.${zone}.network='mesh_captive'
+		set firewall.mesh_client=zone
+		set firewall.mesh_client.name='mesh_client'
+		set firewall.mesh_client.input='ACCEPT'
+		set firewall.mesh_client.output='ACCEPT'
+		set firewall.mesh_client.forward='REJECT'
+		add_list firewall.mesh_client.network='mesh_client'
+		add_list firewall.mesh_client.network='mesh_captive'
 	EOF
 	# add include for custom captive portal rules
 	#TODO: seperate this from main/client config?
-	include=$(uci add firewall include)
 	uci -q batch <<-EOF
-		set firewall.${include}.type='nftables'
-		set firewall.${include}.path='/opt/kb-script/portal_rules.nft'
-		set firewall.${include}.position='table-post'
+		set firewall.portal_rules=include
+		set firewall.portal_rules.type='nftables'
+		set firewall.portal_rules.path='/opt/kb-script/portal_rules.nft'
+		set firewall.portal_rules.position='table-post'
 	EOF
 }
 ### Mesh client forwarding to backhaul
-[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_client" ] && {
-	#TODO: improve check for firewall forwarding. see bridge
-	forwarding=$(uci add firewall forwarding)
+[ -z "$(uci -q get firewall.mesh_client_bkhl)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${forwarding}.src='mesh_client'
-		set firewall.${forwarding}.dest='mesh_bkhl'
+		set firewall.mesh_client_bkhl=forwarding
+		set firewall.mesh_client_bkhl.src='mesh_client'
+		set firewall.mesh_client_bkhl.dest='mesh_bkhl'
 	EOF
-	forwarding=$(uci add firewall forwarding)
+}
+### Mesh client forwarding to wan
+[ -z "$(uci -q get firewall.mesh_client_wan)" ] && {
 	uci -q batch <<-EOF
-		set firewall.${forwarding}.src='mesh_client'
-		set firewall.${forwarding}.dest='wan'
+		set firewall.mesh_client_wan=forwarding
+		set firewall.mesh_client_wan.src='mesh_client'
+		set firewall.mesh_client_wan.dest='wan'
 	EOF
 }
 
