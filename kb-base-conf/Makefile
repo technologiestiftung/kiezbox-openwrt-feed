@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 # The name and version of your package are used to define the variable to point to the build directory of your package: $(PKG_BUILD_DIR)
 PKG_NAME:=kb-base-conf
 PKG_VERSION:=1.0
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_LICENSE:=GPL-2.0-only
 
@@ -47,7 +47,7 @@ endef
 # Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
 define Package/kb-base-conf/install
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_DATA) ./files/70_kb_system $(1)/etc/uci-defaults
+	$(INSTALL_DATA) ./files/etc/uci-defaults/70_kb_* $(1)/etc/uci-defaults
 	$(INSTALL_DIR) $(1)/opt/
 	cp -r ./files/opt/* $(1)/opt
 endef

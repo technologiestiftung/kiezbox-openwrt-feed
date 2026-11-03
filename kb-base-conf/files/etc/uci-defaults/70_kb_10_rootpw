@@ -1,0 +1,11 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+## set root password
+proj_rootpw="$(uci -q get kbproj.main.rootpw)"
+usermod -p "${proj_rootpw}" root
+
+exit 0

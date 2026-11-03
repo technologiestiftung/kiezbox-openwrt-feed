@@ -1,0 +1,77 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Initializes /etc/config/kb with the identity of this box.
+# The other 70_kb_* scripts only run if kb.main was set up here.
+
+. /lib/functions.sh
+
+kb_init_config() {
+	local board_uid="${1}"
+	# uci can not create a missing config file
+	touch /etc/config/kb
+	uci set kb.main='box'
+	uci -q batch <<-EOF
+		set kb.main.state='$(uci get kboxes.default.state)'
+		set kb.main.dist_id='$(uci get kboxes.default.dist_id)'
+		set kb.main.box_id='$(uci get kboxes.default.box_id)'
+		set kb.main.box_name='$(uci get kboxes.default.box_name)'
+	EOF
+	#TODO: add default lon/lat setup
+	[ "$(uci get kb.main.state)" = "u" ] && {
+		[ -n "$(uci -q get kboxes.${board_uid})" ] && {
+			uci -q batch <<-EOF
+				set kb.main.state='$(uci get kboxes.${board_uid}.state)'
+				set kb.main.dist_id='$(uci get kboxes.${board_uid}.dist_id)'
+				set kb.main.box_id='$(uci get kboxes.${board_uid}.box_id)'
+				set kb.main.box_name='$(uci get kboxes.${board_uid}.box_name)'
+				set kb.main.geo_lon='$(uci get kboxes.${board_uid}.geo_lon)'
+				set kb.main.geo_lat='$(uci get kboxes.${board_uid}.geo_lat)'
+				set kb.main.trunk_base='$(uci get kboxes.${board_uid}.trunk_base)'
+				set kb.main.trunk_pw='$(uci get kboxes.${board_uid}.trunk_pw)'
+				set kb.main.trunk_domain='$(uci get kboxes.${board_uid}.trunk_domain)'
+				set kb.main.trunk_calls='$(uci get kboxes.${board_uid}.trunk_calls)'
+			EOF
+		}
+	}
+	[ "$(uci get kb.main.state)" = "u" ] && {
+		uci -q batch <<-EOF
+			set kb.main.state='a'
+			set kb.main.dist_id='00'
+			set kb.main.box_id='${board_uid: -2}'
+			set kb.main.box_name='Auto-${board_uid}'
+		EOF
+	}
+	local dist_id="$(uci get kb.main.dist_id)"
+	[ -n "$(uci -q get kbdist.${dist_id})" ] && {
+		uci set kb.main.dist_name="$(uci -q get kbdist.${dist_id}.name)"
+	}
+}
+
+# Check if board is supported (board_supported)
+# and extract some board specific unique identifier (board_uid)
+# INFO: the board_uid has to be some hexadecimal value
+board=$(board_name)
+case $board in
+bananapi,bpi-r3|\
+glinet,gl-ar300m16|\
+glinet,gl-mt3000)
+	board_supported=true
+	#for these devices we can use the mac of ethernet interface eth0 as uid
+	board_uid="$(cat /sys/class/net/eth0/address | tr -d : )"
+	;;
+*)
+	board_supported=false
+	;;
+esac
+
+# Setup supported boards only
+if [ "${board_supported}" = true ] ; then
+	echo "kb: configuring a ${board} ( with uid ${board_uid} )"
+	kb_init_config "${board_uid}"
+	uci commit
+else
+	echo "kb: board ${board} not supported!"
+fi
+
+exit 0

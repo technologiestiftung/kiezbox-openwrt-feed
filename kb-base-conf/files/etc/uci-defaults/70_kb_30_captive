@@ -1,0 +1,58 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+box_ip_client="10.252.0.1"
+proj_domain="$(uci -q get kbproj.main.domain)"
+
+## setup mesh captive Interface (used for secondary dns only)
+box_ip_captive="10.251.0.1"
+[ -z "$(uci -q get network.mesh_captive)" ] && {
+	uci -q batch <<-EOF
+		set network.mesh_captive='interface'
+		set network.mesh_captive.proto='static'
+		set network.mesh_captive.device='br-client'
+		set network.mesh_captive.ipaddr='${box_ip_captive}'
+		set network.mesh_captive.netmask='255.255.0.0'
+		set network.mesh_captive.defaultroute='0'
+	EOF
+}
+
+### Setup host entries for local app/portal serving
+[ "$(uci -q get dhcp.@domain[-1].src)" != "${proj_domain}" ] && {
+	#TODO: improve check for domain entry. see bridge
+	domain=$(uci add dhcp domain)
+	uci -q batch <<-EOF
+		set dhcp.${domain}.name='${proj_domain}'
+		set dhcp.${domain}.ip='${box_ip_client}'
+	EOF
+}
+### Setup DNS entries for captive portal forwarding
+[ -z "$(uci -q get dhcp.captive)" ] && {
+	#TODO: some important dnsmasq options dont seem to be supported by uci.
+	# confdir is used as workaround. we should port the features to dnsmasq uci.
+	uci -q batch <<-EOF
+		rename dhcp.@dnsmasq[0]=client
+		set dhcp.client=dnsmasq
+		add_list dhcp.client.address='/${proj_domain}/${box_ip_client}'
+		set dhcp.client.local='/lan/${proj_domain}/'
+		set dhcp.client.confdir='/opt/kb-config/dnsmasq.client/'
+		add_list dhcp.client.interface='lan'
+	EOF
+	## list of portal domains was partially taken from https://captivebehavior.wballiance.com/ , some other place i forgot about and our own tests
+	#TODO: add FireOS
+	#TODO: check with different devices
+	#TODO: change this longterm to allow internet access after initial information/page
+	portal_domains="/www.apple.com/www.appleiphonecell.com/captive.apple.com/www.airport.us/www.ibook.info/www.itools.info/www.thinkdifferent.us/apple.com/clients3.google.com/clients4.google.com/android.clients.google.com/connectivitycheck.android.com/connectivitycheck.gstatic.com/www.gstatic.com/www.google.com/www.androidbak.net/detectportal.firefox.com/d2uzsrnmmf6tds.cloudfront.net/msftncsi.com/connectivitycheck.grapheneos.network/connectivitycheck.platform.hicloud.com/${proj_domain}/"
+	uci -q batch <<-EOF
+		set dhcp.captive=dnsmasq
+		add_list dhcp.captive.address='${portal_domains}${box_ip_client}'
+		set dhcp.captive.local='${portal_domains}'
+		set dhcp.captive.confdir='/opt/kb-config/dnsmasq.captive/'
+	EOF
+}
+
+uci commit
+exit 0

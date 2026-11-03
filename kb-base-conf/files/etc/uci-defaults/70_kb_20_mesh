@@ -1,0 +1,210 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+prefix="$(uci -q get kbproj.main.prefix)"
+state="$(uci -q get kb.main.state)"
+dist_id="$(uci -q get kb.main.dist_id)"
+box_id="$(uci -q get kb.main.box_id)"
+dist_nr="$(printf %d 0x$(uci -q get kb.main.dist_id))"
+box_nr="$(printf %d 0x$(uci -q get kb.main.box_id))"
+
+# setup batman device
+[ -z "$(uci -q get network.bat0)" ] && {
+	uci -q batch <<-EOF
+		set network.bat0='interface'
+		set network.bat0.proto='batadv'
+		set network.bat0.routing_algo='BATMAN_IV'
+		set network.bat0.gw_mode='off'
+		set network.bat0.hop_penalty='30'
+		set network.bat0.distributed_arp_table='0'
+	EOF
+}
+# setup openwrt batman interface
+[ -z "$(uci -q get network.batmesh)" ] && {
+	uci -q batch <<-EOF
+		set network.batmesh='interface'
+		set network.batmesh.proto='batadv_hardif'
+		set network.batmesh.master='bat0'
+		set network.batmesh.mtu='1536'
+	EOF
+}
+# setup main mesh bridge interface
+[ "$(uci -q get network.@device[-1].name)" != "br-main" ] && {
+	#TODO: improve check for bridge device. currently only the last device is checked for name match, which could be wrong
+	#TODO: use OpenWRT OUI for personal device, as soon as it is available/announced
+	device=$(uci add network device)
+	uci -q batch <<-EOF
+		set network.${device}.type='bridge'
+		set network.${device}.name='br-main'
+		add_list network.${device}.ports='bat0'
+		set network.${device}.bridge_empty='1'
+		set network.${device}.macaddr='22:02:6b:75:${dist_id}:${box_id}'
+	EOF
+}
+
+# Setup management VLAN
+[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "254" ] && {
+	#TODO: see above
+	bridge_vlan=$(uci add network bridge-vlan)
+	uci -q batch <<-EOF
+		set network.${bridge_vlan}.vlan='254'
+		set network.${bridge_vlan}.device='br-main'
+		add_list network.${bridge_vlan}.ports='bat0:t'
+	EOF
+}
+## Setup mesh management Interface
+[ -z "$(uci -q get network.mesh_mgmt)" ] && {
+	uci -q batch <<-EOF
+		set network.mesh_mgmt='interface'
+		set network.mesh_mgmt.proto='static'
+		set network.mesh_mgmt.device='br-main.254'
+		set network.mesh_mgmt.ipaddr='10.254.${dist_nr}.${box_nr}'
+		set network.mesh_mgmt.netmask='255.255.0.0'
+		set network.mesh_mgmt.defaultroute='0'
+	EOF
+}
+
+# Setup backhaul VLAN
+[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "253" ] && {
+	#TODO: see above
+	bridge_vlan=$(uci add network bridge-vlan)
+	uci -q batch <<-EOF
+		set network.${bridge_vlan}.vlan='253'
+		set network.${bridge_vlan}.device='br-main'
+		add_list network.${bridge_vlan}.ports='bat0:t'
+	EOF
+}
+## Setup mesh backhaul Interface
+[ -z "$(uci -q get network.mesh_bkhl)" ] && {
+	uci -q batch <<-EOF
+		set network.mesh_bkhl='interface'
+		set network.mesh_bkhl.proto='static'
+		set network.mesh_bkhl.device='br-main.253'
+		set network.mesh_bkhl.ipaddr='10.253.${dist_nr}.${box_nr}'
+		set network.mesh_bkhl.netmask='255.255.0.0'
+	EOF
+	[ "${box_nr}" == "1" ] && {
+		uci -q batch <<-EOF
+			set network.mesh_bkhl.defaultroute='0'
+		EOF
+	} || {
+		uci -q batch <<-EOF
+			set network.mesh_bkhl.gateway='10.253.${dist_nr}.1'
+			set network.mesh_bkhl.dns='10.253.${dist_nr}.1'
+			set network.mesh_bkhl.metric='1000'
+		EOF
+	}
+}
+
+# Setup disctict specific VLAN
+[ "$(uci -q get network.@bridge-vlan[-1].vlan)" != "${dist_nr}" ] && {
+	#TODO: see above
+	bridge_vlan=$(uci add network bridge-vlan)
+	uci -q batch <<-EOF
+		set network.${bridge_vlan}.vlan='${dist_nr}'
+		set network.${bridge_vlan}.device='br-main'
+		add_list network.${bridge_vlan}.ports='bat0:t'
+	EOF
+}
+## Setup mesh district Interface
+box_ip_dist="10.${dist_nr}.${box_nr}.1"
+[ -z "$(uci -q get network.mesh_dist)" ] && {
+	uci -q batch <<-EOF
+		set network.mesh_dist='interface'
+		set network.mesh_dist.proto='static'
+		set network.mesh_dist.device='br-main.${dist_nr}'
+		set network.mesh_dist.ipaddr='${box_ip_dist}'
+		set network.mesh_dist.netmask='255.255.0.0'
+		set network.mesh_dist.defaultroute='0'
+	EOF
+}
+
+# Setup Firewall
+## Mesh management zone
+[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_mgmt" ] && {
+	#TODO: improve check for firewall zone. see bridge
+	zone=$(uci add firewall zone)
+	uci -q batch <<-EOF
+		set firewall.${zone}.name='mesh_mgmt'
+		set firewall.${zone}.input='ACCEPT'
+		set firewall.${zone}.output='ACCEPT'
+		set firewall.${zone}.forward='REJECT'
+		add_list firewall.${zone}.network='mesh_mgmt'
+	EOF
+}
+## Mesh backhaul zone
+[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_bkhl" ] && {
+	#TODO: improve check for firewall zone. see bridge
+	zone=$(uci add firewall zone)
+	uci -q batch <<-EOF
+		set firewall.${zone}.name='mesh_bkhl'
+		set firewall.${zone}.input='ACCEPT'
+		set firewall.${zone}.output='ACCEPT'
+		set firewall.${zone}.forward='ACCEPT'
+		set firewall.${zone}.masq='1'
+		add_list firewall.${zone}.network='mesh_bkhl'
+	EOF
+}
+### Mesh backhaul forwarding to wan
+[ "$(uci -q get firewall.@forwarding[-1].src)" != "mesh_bkhl" ] && {
+	#TODO: improve check for firewall forwarding. see bridge
+	forwarding=$(uci add firewall forwarding)
+	uci -q batch <<-EOF
+		set firewall.${forwarding}.src='mesh_bkhl'
+		set firewall.${forwarding}.dest='wan'
+	EOF
+}
+## Mesh district zone
+[ "$(uci -q get firewall.@zone[-1].name)" != "mesh_dist" ] && {
+	#TODO: improve check for firewall zone. see bridge
+	zone=$(uci add firewall zone)
+	uci -q batch <<-EOF
+		set firewall.${zone}.name='mesh_dist'
+		set firewall.${zone}.input='ACCEPT'
+		set firewall.${zone}.output='ACCEPT'
+		set firewall.${zone}.forward='REJECT'
+		add_list firewall.${zone}.network='mesh_dist'
+	EOF
+}
+
+# Setup wireless interfaces
+## Setup mesh interface
+## TODO: We currently assume radio0 is on the 2g band. improve this to find the 2g radio and mesh there
+mesh_ssid="$(uci -q get kbproj.main.mesh_ssid)"
+mesh_chan_2_4="$(uci -q get kbproj.main.mesh_chan_2_4)"
+proj_psk="$(uci -q get kbproj.main.psk)"
+[ -n "$(uci -q get wireless.radio0)" -a "$(uci -q get wireless.radio0.band)" = "2g" ] && {
+	uci -q batch <<-EOF
+		set wireless.radio0.channel='${mesh_chan_2_4}'
+		set wireless.kbmesh0=wifi-iface
+		set wireless.kbmesh0.device='radio0'
+		set wireless.kbmesh0.mode='mesh'
+		set wireless.kbmesh0.encryption='sae'
+		set wireless.kbmesh0.mesh_id='${mesh_ssid}'
+		set wireless.kbmesh0.mesh_fwding='0'
+		set wireless.kbmesh0.mesh_rssi_threshold='0'
+		set wireless.kbmesh0.key='${proj_psk}'
+		set wireless.kbmesh0.network='batmesh'
+		set wireless.kbmesh0.ifname='m-11s-0'
+		set wireless.kbmesh0.macaddr='42:02:6b:75:${dist_id}:${box_id}'
+		set wireless.kbapmgmt0=wifi-iface
+		set wireless.kbapmgmt0.device='radio0'
+		set wireless.kbapmgmt0.mode='ap'
+		set wireless.kbapmgmt0.ssid='${prefix}-${state}-${dist_id}-${box_id}_mgmt'
+		set wireless.kbapmgmt0.encryption='psk2'
+		set wireless.kbapmgmt0.key='${proj_psk}'
+		set wireless.kbapmgmt0.network='mesh_mgmt'
+		set wireless.kbapmgmt0.macaddr='random'
+	EOF
+	# Delete default APs if needed
+	uci -q del wireless.default_radio0
+	uci -q del wireless.default_radio1
+	# Enable wireless radio
+	uci set wireless.radio0.disabled=''
+}
+
+uci commit
+exit 0

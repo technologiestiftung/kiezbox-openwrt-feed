@@ -1,0 +1,21 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+state="$(uci get kb.main.state)"
+dist_id="$(uci get kb.main.dist_id)"
+dist_name="$(uci get kb.main.dist_name)"
+box_id="$(uci get kb.main.box_id)"
+box_name="$(uci get kb.main.box_name)"
+proj_prefix="$(uci get kbproj.main.prefix)"
+proj_name="$(uci get kbproj.main.name)"
+# Setup System information
+uci -q batch <<-EOF
+	set system.@system[0].hostname='${proj_prefix}-${state}-${dist_id}-${box_id}'
+	set system.@system[0].description='${proj_name} ( ${dist_name} - ${box_name} )'
+EOF
+
+uci commit
+exit 0

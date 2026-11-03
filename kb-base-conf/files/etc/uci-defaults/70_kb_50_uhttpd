@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+
+# only configure boxes that were set up by 70_kb_00_init
+[ -n "$(uci -q get kb.main)" ] || exit 0
+
+## Change uhttpd ports and https redirect
+uci -q batch <<-EOF
+	set uhttpd.main.listen_http='8080'
+	set uhttpd.main.listen_https='8443'
+	set uhttpd.main.redirect_https='1'
+	set uhttpd.main.cert='/opt/kb-certs/fullchain.pem'
+	set uhttpd.main.key='/opt/kb-certs/privkey.pem'
+EOF
+
+uci commit
+exit 0
